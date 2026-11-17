@@ -702,19 +702,50 @@ const COSTUMES=[null,
   {nm:"Ombak Samudra",suit:"#0e7490",pants:"#164e63",acc:"#f8fafc",cape:"#1e3a8a",mask:false,em:"wave",emc:"#f8fafc"},
   {nm:"Robot Baja",suit:"#9ca3af",pants:"#4b5563",acc:"#374151",cape:null,mask:false,em:"core",emc:"#67e8f9"},
   {nm:"Ratu Es",suit:"#bae6fd",pants:"#e0f2fe",acc:"#f8fafc",cape:"#f8fafc",mask:false,em:"snow",emc:"#0369a1"},
-  {nm:"Kilat Senja",suit:"#be185d",pants:"#831843",acc:"#fbbf24",cape:"#fbbf24",mask:true,em:"bolt",emc:"#fde68a"}
+  {nm:"Kilat Senja",suit:"#be185d",pants:"#831843",acc:"#fbbf24",cape:"#fbbf24",mask:true,em:"bolt",emc:"#fde68a"},
+  /* generic civil-servant / cadet uniforms (no official insignia) */
+  {nm:"PNS Khaki",u:true,suit:"#c2a878",pants:"#9c8458",acc:"#111827",cape:null,mask:false,em:"pns",emc:"#d4a017"},
+  {nm:"PNS Putih-Hitam",u:true,suit:"#f8fafc",pants:"#111827",acc:"#111827",cape:null,mask:false,em:"putih",emc:"#111827"},
+  {nm:"PNS Batik",u:true,suit:"#1e3a8a",pants:"#111827",acc:"#111827",cape:null,mask:false,em:"batik",emc:"#fbbf24"},
+  {nm:"Praja Putih (PDU)",u:true,suit:"#f8fafc",pants:"#f1f5f9",acc:"#111827",cape:null,mask:false,em:"praja",emc:"#d4a017",hat:10}
 ];
 const COSTUME_NAMES=COSTUMES.map(c=>c?c.nm:"Tanpa kostum");
 const FACES=["Senyum","Tertawa","Kacamata hitam","Kedip","Kaget","Serius","Malu-malu"];
-const HATS=["Botak","Rambut pendek","Rambut jabrik","Rambut panjang","Kerudung","Peci","Topi","Kupluk","Ikat kepala","Mahkota"];
+const HATS=["Botak","Rambut pendek","Rambut jabrik","Rambut panjang","Kerudung","Peci","Topi","Kupluk","Ikat kepala","Mahkota","Topi Pet"];
 const AVK=["s","b","m","c","w","t","r","g","k"];
 const AVN=()=>[SKIN.length,SHIRT.length,PATTERN.length,PANTS.length,FACES.length,HATS.length,HAIRC.length,PANT_STYLES.length,COSTUMES.length];
 function lookOf(a){
   const c=COSTUMES[a.k];
-  if(c)return {c,sh:c.suit,pa:c.pants,acc:c.acc,cape:c.cape,mask:c.mask,g:0};
-  return {c:null,sh:SHIRT[a.b],pa:PANTS[a.c],acc:null,cape:null,mask:false,g:a.g};
+  if(c)return {c,sh:c.suit,pa:c.pants,acc:c.acc,cape:c.cape,mask:c.mask,g:0,
+    glove:c.u?null:c.acc,boots:c.u?null:c.acc,shoe:c.u?"#111827":null,belt:c.u?"#1f2937":c.acc};
+  return {c:null,sh:SHIRT[a.b],pa:PANTS[a.c],acc:null,cape:null,mask:false,g:a.g,glove:null,boots:null,shoe:null,belt:null};
+}
+function uniformMarkup(c){
+  const S='stroke="rgba(0,0,0,.28)" stroke-width="1"',d=mix(c.suit,"#000000",.22),gold=c.emc;
+  const buttons=col=>[47,54,61,68,75].map(y=>`<circle cx="50" cy="${y}" r="1.2" fill="${col}"/>`).join("");
+  const tag=`<rect x="55.5" y="48.5" width="13" height="3.6" rx="1" fill="#111827"/><rect x="57" y="49.8" width="9" height="1" fill="#f8fafc"/>`;
+  const pockets=`<rect x="31" y="53" width="13" height="11" rx="1.5" fill="none" ${S}/><path d="M31 53 H44 V56.5 Q37.5 58.5 31 56.5 Z" fill="${d}" ${S}/>
+    <rect x="56" y="53" width="13" height="11" rx="1.5" fill="none" ${S}/><path d="M56 53 H69 V56.5 Q62.5 58.5 56 56.5 Z" fill="${d}" ${S}/>`;
+  let g="";
+  if(c.em==="pns"){
+    g+=`<rect x="27.6" y="40.8" width="8" height="3.4" rx="1" fill="${d}" ${S}/><rect x="64.4" y="40.8" width="8" height="3.4" rx="1" fill="${d}" ${S}/>`;
+    g+=`<path d="M37 40.5 L45 48 L50 44.5 L55 48 L63 40.5 Z" fill="${mix(c.suit,"#ffffff",.12)}" ${S}/><path d="M50 44.5 V81" stroke="${d}" stroke-width="1"/>`+buttons("#6b5530")+pockets+tag;
+    g+=`<circle cx="37.5" cy="49.5" r="2.4" fill="${gold}" ${S}/>`;
+  }else if(c.em==="putih"){
+    g+=`<path d="M38 40.5 L45 47 L50 44.5 L55 47 L62 40.5 Z" fill="#fff" ${S}/><path d="M50 45 L47.5 48 L49 70 L51 70 L52.5 48 Z" fill="#111827"/>`+tag+`<path d="M50 70 V81" stroke="#cbd5e1" stroke-width="1"/>`;
+  }else if(c.em==="batik"){
+    for(let y=45;y<=80;y+=7)g+=`<path d="M25 ${y+6} Q31 ${y-2} 37 ${y+6} T49 ${y+6} T61 ${y+6} T73 ${y+6}" stroke="${gold}" stroke-width="2" fill="none" opacity=".75"/>`;
+    for(let y=48;y<=78;y+=7)for(let x=31;x<=69;x+=12)g+=`<circle cx="${x}" cy="${y}" r="1.3" fill="#f8fafc" opacity=".7"/>`;
+    g+=`<path d="M38 40.5 L45 47 L50 44.5 L55 47 L62 40.5 Z" fill="${d}" ${S}/>`+buttons("#f8fafc");
+  }else if(c.em==="praja"){
+    g+=`<rect x="27.6" y="40.8" width="9.5" height="4" rx="1" fill="${gold}" ${S}/><rect x="62.9" y="40.8" width="9.5" height="4" rx="1" fill="${gold}" ${S}/>`;
+    g+=`<rect x="40" y="40.6" width="20" height="4.5" rx="1" fill="#f8fafc" ${S}/><path d="M50 45 V81" stroke="#cbd5e1" stroke-width="1"/>`+buttons(gold)+pockets.replace(/fill="[^"]*" stroke/g,'fill="none" stroke')+tag;
+    g+=`<path d="M30 44 Q35 62 49 55 M31 45 Q37 66 49 58" stroke="${gold}" stroke-width="1.5" fill="none"/><circle cx="37.5" cy="50" r="2.2" fill="${gold}" ${S}/>`;
+  }
+  return g;
 }
 function emblemMarkup(c){
+  if(c.u)return uniformMarkup(c);
   const S='stroke="rgba(0,0,0,.3)" stroke-width="1.1"',f=c.emc;
   const ring=`<circle cx="50" cy="59" r="12" fill="${mix(c.suit,"#000000",.25)}" ${S}/>`;
   return ring+({
@@ -793,7 +824,7 @@ function avSVG(code,mode){
   let g="";
   if(L.cape)g+=`<path d="M27 41 H73 L82 ${mode==="full"?114:72} Q50 ${mode==="full"?120:78} 18 ${mode==="full"?114:72} Z" fill="${L.cape}" ${S}/>`;
   if(mode==="full"){
-    const shoe=L.acc||paD,shoeY=L.acc?106:115,shoeH=L.acc?17:8;
+    const shoe=L.boots||L.shoe||paD,shoeY=L.boots?106:115,shoeH=L.boots?17:8;
     if(L.g===2){
       g+=`<rect x="30" y="80" width="17" height="40" rx="3" fill="${sk}" ${S}/><rect x="53" y="80" width="17" height="40" rx="3" fill="${sk}" ${S}/>`;
       g+=`<path d="M27 79 H73 L79 104 Q50 108 21 104 Z" fill="${pa}" ${S}/>`;
@@ -808,15 +839,16 @@ function avSVG(code,mode){
   }
   if(L.c){
     g+=`<rect x="12" y="40" width="14" height="38" rx="4" fill="${sh}" ${S}/><rect x="74" y="40" width="14" height="38" rx="4" fill="${sh}" ${S}/>`;
-    g+=`<rect x="12" y="66" width="14" height="12" rx="4" fill="${L.acc}" ${S}/><rect x="74" y="66" width="14" height="12" rx="4" fill="${L.acc}" ${S}/>`;
+    const hand=L.glove||sk,hy0=L.glove?66:69,hh0=L.glove?12:9;
+    g+=`<rect x="12" y="${hy0}" width="14" height="${hh0}" rx="4" fill="${hand}" ${S}/><rect x="74" y="${hy0}" width="14" height="${hh0}" rx="4" fill="${hand}" ${S}/>`;
   }else{
     const sl=a.m===4||a.m===8?30:20;
     g+=`<rect x="12" y="40" width="14" height="38" rx="4" fill="${sk}" ${S}/><rect x="74" y="40" width="14" height="38" rx="4" fill="${sk}" ${S}/>`;
     g+=`<rect x="12" y="40" width="14" height="${sl}" rx="4" fill="${sh}" ${S}/><rect x="74" y="40" width="14" height="${sl}" rx="4" fill="${sh}" ${S}/>`;
   }
   g+=`<rect x="27" y="40" width="46" height="41" rx="4" fill="${sh}" ${S}/>`;
-  if(L.c)g+=`<rect x="27.6" y="75" width="44.8" height="5" fill="${L.acc}" opacity=".9"/>`;
-  g+=chestMarkup(a);
+  if(L.belt)g+=`<rect x="27.6" y="75" width="44.8" height="5" fill="${L.belt}" opacity=".92"/>`+(L.c&&L.c.u?`<rect x="47" y="75.3" width="6" height="4.4" rx="1" fill="#d4a017"/>`:"");
+  g+=`<clipPath id="avTorsoClip"><rect x="27" y="40" width="46" height="41" rx="4"/></clipPath><g clip-path="url(#avTorsoClip)">${chestMarkup(a)}</g>`;
   if(!L.c&&a.m===4)g+=`<path d="${rr(30,27,40,16,8)}" fill="${shD}" ${S}/>`;
   if(a.t===3)g+=`<path d="${rr(29,1,42,48,9)}" fill="${hc}" ${S}/>`;
   g+=`<path d="${rr(33,5,34,33,8)}" fill="${sk}" ${S}/>`;
@@ -833,7 +865,8 @@ function avSVG(code,mode){
     `<path d="M32 12 Q32 -1 50 -1 Q68 -1 68 12 Z" fill="${hc}" ${S}/><path d="M50 12 H76 Q78 12 76 15 H50 Z" fill="${hcD}" ${S}/><circle cx="50" cy="0" r="1.6" fill="${hcD}"/>`,
     `<path d="M31 13 Q31 -2 50 -2 Q69 -2 69 13 Z" fill="${hc}" ${S}/><rect x="30" y="9" width="40" height="6" rx="3" fill="${hcD}" ${S}/><circle cx="50" cy="-3" r="4" fill="#fff" ${S}/>`,
     shortHair+`<rect x="32" y="9" width="36" height="4.5" rx="2" fill="${a.r===5?"#3b82f6":"#ef4444"}" ${S}/><path d="M67 11 L74 8 L73 15 Z" fill="${a.r===5?"#3b82f6":"#ef4444"}"/>`,
-    `<path d="M35 11 L35 -1 L42 5 L50 -5 L58 5 L65 -1 L65 11 Z" fill="#fbbf24" ${S}/><circle cx="50" cy="5" r="2" fill="#ef4444"/><circle cx="42" cy="8" r="1.4" fill="#3b82f6"/><circle cx="58" cy="8" r="1.4" fill="#22c55e"/>`
+    `<path d="M35 11 L35 -1 L42 5 L50 -5 L58 5 L65 -1 L65 11 Z" fill="#fbbf24" ${S}/><circle cx="50" cy="5" r="2" fill="#ef4444"/><circle cx="42" cy="8" r="1.4" fill="#3b82f6"/><circle cx="58" cy="8" r="1.4" fill="#22c55e"/>`,
+    `<path d="M29 8 Q29 -4 50 -5 Q71 -4 71 8 Z" fill="#f8fafc" ${S}/><rect x="32" y="6" width="36" height="5" rx="1.5" fill="#111827" ${S}/><path d="M33 8.2 H67" stroke="#d4a017" stroke-width="1.2"/><path d="M35 11 H65 Q61 16.5 50 16.5 Q39 16.5 35 11 Z" fill="#111827" ${S}/><circle cx="50" cy="3" r="2.4" fill="#d4a017" ${S}/>`
   ][a.t];
   return `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${g}</svg>`;
 }
@@ -873,15 +906,15 @@ function build3D(code){
   const pm=(c,o)=>new T3.MeshPhongMaterial(Object.assign({color:c,shininess:70,specular:0x303030},o||{}));
   const rb=(w,h,d,m,x,y,z,r)=>{const o=new T3.Mesh(rgeo(w,h,d,r==null?0.3:r),m);o.position.set(x,y,z);return o};
   const decal=(inner,vb,w,h,pw,ph)=>{if(!inner)return null;const m=new T3.MeshPhongMaterial({map:svgTex(inner,vb,pw,ph,null),transparent:true,shininess:30,polygonOffset:true,polygonOffsetFactor:-2});return new T3.Mesh(new T3.PlaneGeometry(w,h),m)};
-  const mS=pm(sk),mSh=pm(sh),mPa=pm(pa),mPaD=pm(mix(pa,"#000000",.45)),mBelt=pm(LK.acc||mix(pa,"#000000",.22)),mH=pm(hc,{shininess:40}),mHD=pm(mix(hc,"#000000",.3)),mShD=pm(mix(sh,"#000000",.22));
-  const mAcc=LK.acc?pm(LK.acc,{shininess:90}):null;
+  const mS=pm(sk),mSh=pm(sh),mPa=pm(pa),mPaD=pm(LK.shoe||mix(pa,"#000000",.45),LK.shoe?{shininess:110}:{}),mBelt=pm(LK.belt||mix(pa,"#000000",.22)),mH=pm(hc,{shininess:40}),mHD=pm(mix(hc,"#000000",.3)),mShD=pm(mix(sh,"#000000",.22));
+  const mAcc=LK.boots||LK.glove?pm(LK.boots||LK.glove,{shininess:90}):null;
   const root=new T3.Group(),body=new T3.Group();root.add(body);
   const legL=new T3.Group(),legR=new T3.Group();legL.position.set(-1.12,4.25,0);legR.position.set(1.12,4.25,0);
   [legL,legR].forEach(L=>{
     if(LK.g===1){L.add(rb(2.0,1.9,1.95,mPa,0,-0.95,0,.35));L.add(rb(1.8,1.7,1.75,mS,0,-2.75,0,.35))}
     else if(LK.g===2)L.add(rb(1.75,3.5,1.75,mS,0,-1.75,0,.35));
     else L.add(rb(2.0,3.5,1.95,mPa,0,-1.75,0,.35));
-    if(mAcc)L.add(rb(2.12,1.7,2.3,mAcc,0,-3.4,0.1,.36));
+    if(LK.boots)L.add(rb(2.12,1.7,2.3,mAcc,0,-3.4,0.1,.36));
     else L.add(rb(2.1,0.85,2.35,mPaD,0,-3.82,0.14,.36));
     body.add(L)});
   if(LK.g===2){const sk2=new T3.Mesh(new T3.CylinderGeometry(2.45,3.15,2.2,24),pm(pa));sk2.position.y=3.35;body.add(sk2)}
@@ -893,7 +926,7 @@ function build3D(code){
   if(LK.cape){cape=new T3.Group();cape.position.set(0,8.15,-1.2);const cm=rb(4.9,6.4,0.18,pm(LK.cape,{shininess:30,side:T3.DoubleSide}),0,-3.2,0,.08);cape.add(cm);body.add(cape)}
   const sl=LK.c?3.75:(a.m===4||a.m===8?3.0:2.1);
   const arm=x=>{const g=new T3.Group();g.position.set(x,8.0,0);
-    if(LK.c){g.add(rb(1.48,2.6,1.48,mSh,0,-1.2,0,.45));g.add(rb(1.42,1.45,1.42,mAcc,0,-3.1,0,.5))}
+    if(LK.c){g.add(rb(1.48,2.75,1.48,mSh,0,-1.25,0,.45));g.add(LK.glove?rb(1.42,1.45,1.42,mAcc,0,-3.1,0,.5):rb(1.3,1.15,1.3,mS,0,-3.2,0,.5))}
     else{g.add(rb(1.48,sl+0.3,1.48,mSh,0,-sl/2+0.12,0,.45));
       g.add(rb(1.3,3.75-sl,1.3,mS,0,-sl-(3.75-sl)/2+0.05,0,.5))}
     body.add(g);return g};
@@ -922,6 +955,12 @@ function build3D(code){
       const c=new T3.Mesh(new T3.CylinderGeometry(1.5,1.5,0.7,8,1,true),gold);c.position.y=yT+0.35;headG.add(c);
       for(let i=0;i<4;i++){const k=new T3.Mesh(new T3.ConeGeometry(0.32,0.75,4),gold);const an=i/4*Math.PI*2+Math.PI/4;k.position.set(Math.sin(an)*1.45,yT+1.05,Math.cos(an)*1.45);headG.add(k)}
       const gem=new T3.Mesh(new T3.SphereGeometry(0.22,10,8),pm("#ef4444",{shininess:120}));gem.position.set(0,yT+0.35,1.5);headG.add(gem);break}
+    case 10:{shortHair();
+      const top=new T3.Mesh(new T3.CylinderGeometry(2.25,1.85,1.1,28),pm("#f8fafc",{shininess:60}));top.position.set(0,yT+0.75,-0.1);top.scale.z=0.95;headG.add(top);
+      const band=new T3.Mesh(new T3.CylinderGeometry(1.87,1.87,0.5,28),pm("#111827",{shininess:90}));band.position.set(0,yT+0.05,-0.1);headG.add(band);
+      const strap=rb(3.2,0.12,0.1,pm("#d4a017",{shininess:120}),0,yT+0.08,1.72,.04);headG.add(strap);
+      const visor=new T3.Mesh(new T3.CylinderGeometry(1.6,1.6,0.14,24,1,false,-Math.PI/2,Math.PI),pm("#111827",{shininess:130}));visor.position.set(0,yT-0.18,1.05);visor.rotation.x=0.18;headG.add(visor);
+      const badge=new T3.Mesh(new T3.SphereGeometry(0.28,12,8),pm("#d4a017",{shininess:120}));badge.position.set(0,yT+0.75,1.95);badge.scale.z=0.45;headG.add(badge);break}
   }
   root.traverse(o=>{if(o.isMesh)o.castShadow=true});
   root.userData={body,legL,legR,armL,armR,headG,face,fOpen,fBlink,cape};
@@ -1072,7 +1111,7 @@ function mountCreator(el,get,set){
     `<div class="crrow"><span>Ekspresi: <b>${FACES[a.w]}</b></span>${ic("w",FACES)}</div>`,
     costumeNote(a)+`<div class="crrow"><span>Warna baju</span>${sw("b",SHIRT)}</div><div class="crrow"><span>Motif: <b>${PATTERN[a.m]}</b></span>${chips("m",PATTERN)}</div>`,
     costumeNote(a)+`<div class="crrow"><span>Model: <b>${PANT_STYLES[a.g]}</b></span>${chips("g",PANT_STYLES)}</div><div class="crrow"><span>Warna celana / rok</span>${sw("c",PANTS)}</div>`,
-    `<div class="crrow"><span>Kostum pahlawan: <b>${COSTUME_NAMES[a.k]}</b></span>${ic("k",COSTUME_NAMES,"bust")}</div><div class="hint" style="font-size:12px">Kostum orisinal Arena TWK, lengkap dengan jubah, topeng, dan lambang di dada.</div>`
+    `<div class="crrow"><span>Kostum pahlawan: <b>${COSTUME_NAMES[a.k]}</b></span>${ic("k",COSTUME_NAMES,"bust")}</div><div class="hint" style="font-size:12px">Kostum pahlawan orisinal Arena TWK plus seragam PNS &amp; Praja (tanpa logo instansi resmi). Seragam Praja otomatis memakai Topi Pet.</div>`
   ][tab]};
   const render=pop=>{
     const c=get();
@@ -1083,7 +1122,9 @@ function mountCreator(el,get,set){
     const b=e.target.closest("button");if(!b||!el.contains(b))return;e.preventDefault();
     if(b.dataset.tab!=null){tab=+b.dataset.tab;render();return}
     if(b.dataset.rand){set(avRandom());SFX.click();render(true);return}
-    if(b.dataset.k){const a=avParse(get());a[b.dataset.k]=+b.dataset.v;set(avCode(a));SFX.click();render(true)}
+    if(b.dataset.k){const a=avParse(get());a[b.dataset.k]=+b.dataset.v;
+      if(b.dataset.k==="k"&&COSTUMES[a.k]&&COSTUMES[a.k].hat!=null&&a.t!==4)a.t=COSTUMES[a.k].hat;
+      set(avCode(a));SFX.click();render(true)}
   };
   render();
   return render;
