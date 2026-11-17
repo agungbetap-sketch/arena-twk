@@ -294,6 +294,7 @@ canvas.av3d:active{cursor:grabbing}
 .podfig{width:110px;height:150px}
 .joinbig{font-size:clamp(17px,3vw,24px);font-weight:700;color:#5b21b6;word-break:break-all;background:#f5f3ff;border:2px dashed #c4b5fd;border-radius:12px;padding:8px 10px;margin:4px 0 8px}
 .joinonly #stBack{display:none}
+.card.resume{border:3px solid #f59e0b;animation:pop .4s}
 html.joinonly,html.joinonly body{overscroll-behavior-y:contain}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:10}
 </style>
@@ -307,6 +308,7 @@ html.joinonly,html.joinonly body{overscroll-behavior-y:contain}
 <section id="home" class="screen active">
   <h1 class="logo" id="logo">ARENA TWK</h1>
   <p class="tag">Latihan Tes Wawasan Kebangsaan · SKD CPNS</p>
+  <div id="resumeBox" class="card resume" style="display:none"></div>
   <div class="grid2">
     <div class="card">
       <h2>1 · Daftar Peserta</h2>
@@ -1617,13 +1619,13 @@ function olClose(notify){
   cancelAnimationFrame(OL.stRaf);clearTimeout(OL.joinTimer);
   OL.client=null;
   if(c){
-    if(notify&&OL.role==="host"){try{c.publish(OL.base+"/h",JSON.stringify({t:"closed"}),{qos:1,retain:true})}catch(e){}}
+    if(notify&&OL.role==="host"){store.set("host",null);try{c.publish(OL.base+"/h",JSON.stringify({t:"closed"}),{qos:1,retain:true})}catch(e){}}
     setTimeout(()=>{try{c.end()}catch(e){}},notify?800:0);
   }
   OL.role=null;OL.phase="";$("#netbar").classList.remove("show");
 }
-function runTimer(wrap,ring,num,T,onEnd){
-  let raf=0,last=null,stop=false;const t0=performance.now();
+function runTimer(wrap,ring,num,T,onEnd,elapsed){
+  let raf=0,last=null,stop=false;const t0=performance.now()-(elapsed||0);
   wrap.className="timer";ring.style.strokeDashoffset=0;num.textContent=Math.ceil(T/1000);
   const loop=now=>{
     if(stop)return;
@@ -1656,20 +1658,63 @@ async function hostCreate(){
   c.subscribe(OL.base+"/p",{qos:1});
   c.on("message",(t,b)=>{if(OL.client!==c)return;let m;try{m=JSON.parse(b.toString())}catch(e){return}hostMsg(m)});
   netWatch(c);
+  renderLobbyInfo();
+  $("#lobStatus").textContent=`${qs.length} soal · ${S.set.t} detik per soal · menunggu peserta…`;
+  hostLobbyPub();
+}
+function renderLobbyInfo(){
   const base=location.href.split(/[?#]/)[0].replace(/index\.html$/,"");
   const url=base+"?pin="+OL.pin,joinUrl=base+"join/",joinShort=joinUrl.replace(/^https?:\/\//,"").replace(/\/$/,"");
   OL.invite=`Ayo gabung kuis Arena TWK! 🎮\nBuka: ${joinUrl}\nPIN: ${OL.pin}\n\nAtau langsung (PIN otomatis): ${url}`;
   $("#lobPin").textContent=OL.pin;$("#hPin").textContent=OL.pin;$("#lobUrl").textContent=url;
   $("#lobJoin").textContent=joinShort;$("#hJoin").textContent="· "+joinShort;
   $("#lobFile").style.display=location.protocol==="file:"?"":"none";
-  $("#lobStatus").textContent=`${qs.length} soal · ${S.set.t} detik per soal · menunggu peserta…`;
   loadLib(QR_URL,"QRCode").then(Q=>{$("#qrbox").innerHTML="";new Q($("#qrbox"),{text:url,width:220,height:220,correctLevel:Q.CorrectLevel.M})}).catch(()=>{});
-  hostLobbyPub();
+}
+/* --- host session persistence (survives accidental refresh of the teacher's laptop) --- */
+function saveHost(){
+  if(OL.role!=="host"||!OL.pin)return;
+  store.set("host",{pin:OL.pin,qs:OL.qs,qi:OL.qi,phase:OL.phase,view:OL.view||"",players:[...OL.players.values()],
+    answers:[...OL.answers.entries()],qWall:OL.qWall||0,set:{t:S.set.t,bahas:S.set.bahas,pg:S.set.pg},last:OL.last,ts:Date.now()});
+}
+function getHostSess(){const h=store.get("host",null);return h&&h.pin&&Array.isArray(h.qs)&&Date.now()-(h.ts||0)<SESS_TTL?h:null}
+async function hostRestore(sv){
+  show("olLobby");$("#lobStatus").textContent="Memulihkan sesi online…";$("#lobStart").disabled=true;
+  olClose();
+  let c=null;for(let a=0;a<3&&!c;a++){try{c=await connectBroker(+sv.pin[0]-1,10000)}catch(e){}}
+  if(!c){$("#lobStatus").innerHTML='<span class="err">✖ Gagal tersambung ke server. Cek internet, lalu muat ulang halaman dan pilih "Lanjutkan sesi" lagi.</span>';return}
+  Object.assign(S.set,sv.set||{});
+  Object.assign(OL,{role:"host",client:c,pin:sv.pin,base:"arenatwk/v1/"+sv.pin,qs:sv.qs,qi:sv.qi,phase:sv.phase,view:sv.view,
+    players:new Map((sv.players||[]).map(p=>[p.id,p])),answers:new Map(sv.answers||[]),qWall:sv.qWall||0,last:sv.last||null});
+  S.qs=OL.qs;
+  c.subscribe(OL.base+"/p",{qos:1});
+  c.on("message",(t,b)=>{if(OL.client!==c)return;let m;try{m=JSON.parse(b.toString())}catch(e){return}hostMsg(m)});
+  netWatch(c);
+  renderLobbyInfo();
+  if(sv.phase==="lobby"){hostLobbyPub();$("#lobStatus").textContent=`✔ Sesi dipulihkan · ${OL.qs.length} soal · menunggu peserta…`}
+  else if(sv.phase==="q"){const remain=S.set.t*1000-(Date.now()-OL.qWall);hostQuestion(Math.max(1500,remain))}
+  else if(sv.phase==="reveal"){if(OL.last)olPub(OL.last,true);hostBoard()}
+  else if(sv.phase==="end"){showRank();hostPubEnd()}
+  olPub({t:"sync"},false);
+  SFX.go();
+}
+function hostResumePrompt(){
+  const sv=getHostSess(),box=$("#resumeBox");if(!sv){box.style.display="none";return}
+  const n=(sv.players||[]).length,where=sv.phase==="lobby"?"masih di lobi":sv.phase==="end"?"sudah di peringkat akhir":`soal ${sv.qi+1} dari ${sv.qs.length}`;
+  box.innerHTML=`<div><b>🔄 Sesi online PIN ${esc(sv.pin)} belum ditutup</b><div class="hint">${where} · ${n} peserta · skor dan jawaban tersimpan</div></div>
+    <div class="actions" style="justify-content:flex-start;margin-top:10px"><button id="rsGo" class="btn go" type="button">▶ Lanjutkan sesi</button><button id="rsEnd" class="btn ghost" type="button">Tutup sesi itu</button></div>`;
+  box.style.display="";
+  $("#rsGo").onclick=()=>{box.style.display="none";hostRestore(sv)};
+  $("#rsEnd").onclick=async()=>{
+    if(!confirm(`Tutup sesi PIN ${sv.pin}? Peserta akan melihat sesi selesai dan skornya tidak bisa dilanjutkan.`))return;
+    store.set("host",null);box.style.display="none";
+    try{const c=await connectBroker(+sv.pin[0]-1,8000);c.publish("arenatwk/v1/"+sv.pin+"/h",JSON.stringify({t:"closed"}),{qos:1,retain:true});setTimeout(()=>c.end(),800)}catch(e){}
+  };
 }
 function hostLobbyPub(){
   OL.phase="lobby";
   OL.last={t:"lobby",n:OL.qs.length,players:[...OL.players.values()].map(p=>({id:p.id,name:p.name,av:p.av}))};
-  olPub(OL.last,true);
+  olPub(OL.last,true);saveHost();
   const ps=[...OL.players.values()];
   $("#lobCount").textContent=ps.length;
   $("#lobPlayers").innerHTML=ps.length?ps.map(p=>`<span class="pchip">${avHTML(p.av)}<b>${esc(p.name)}</b></span>`).join(""):'<span class="hint">Menunggu peserta…</span>';
@@ -1690,19 +1735,21 @@ function hostMsg(m){
     }
     const ack={t:"ack",id:m.id,name:p.name,pts:p.points,b:p.benar,s:p.salah+p.kosong,st:p.streak};
     if(OL.phase==="q"){const a=OL.answers.get(m.id);ack.qi=OL.qi;ack.ans=a?a.i:null;ack.remain=Math.max(0,Math.round(S.set.t*1000-(performance.now()-(OL.qT0||0))))}
-    olPub(ack,false);
+    olPub(ack,false);saveHost();
     if(OL.phase==="lobby")hostLobbyPub();else updAns();
   }else if(m.t==="ans"){
     if(OL.phase!=="q"||m.qi!==OL.qi||!OL.players.has(m.id)||OL.answers.has(m.id))return;
     const q=OL.qs[OL.qi],i=m.i|0;if(i<0||i>=q.opsi.length)return;
     OL.answers.set(m.id,{i,ms:Math.max(0,Math.min(+m.ms||0,S.set.t*1000))});
-    SFX.click();updAns();
+    SFX.click();updAns();saveHost();
     if(OL.answers.size>=OL.players.size)setTimeout(hostReveal,500);
   }
 }
 function updAns(){$("#hAns").textContent=`📥 ${OL.answers.size}/${OL.players.size} menjawab`}
-function hostQuestion(){
-  const q=OL.qs[OL.qi];OL.phase="q";OL.answers=new Map();OL.qT0=performance.now();
+function hostQuestion(remain){
+  const q=OL.qs[OL.qi],resume=typeof remain==="number";OL.phase="q";
+  if(!resume){OL.answers=new Map();OL.qWall=Date.now()}
+  OL.qT0=performance.now()-(resume?Math.max(0,S.set.t*1000-remain):0);
   OL.last={t:"q",qi:OL.qi,n:OL.qs.length,q:q.q,topik:q.topik,opsi:q.opsi,dur:S.set.t};olPub(OL.last,true);
   show("olQ");
   $("#hProg").style.width=(OL.qi/OL.qs.length*100)+"%";$("#hProgTxt").textContent=`Soal ${OL.qi+1} / ${OL.qs.length}`;
@@ -1713,7 +1760,8 @@ function hostQuestion(){
   $("#hFb").className="fb";$("#hSkip").style.display="";
   updAns();SFX.go();
   if(OL.cancelTimer)OL.cancelTimer();
-  OL.cancelTimer=runTimer($("#hTimer"),$("#hRing"),$("#hTnum"),S.set.t*1000,()=>{$("#hTnum").textContent="0";setTimeout(hostReveal,1000)});
+  OL.cancelTimer=runTimer($("#hTimer"),$("#hRing"),$("#hTnum"),S.set.t*1000,()=>{$("#hTnum").textContent="0";setTimeout(hostReveal,1000)},performance.now()-OL.qT0);
+  saveHost();
 }
 function hostReveal(){
   if(OL.phase!=="q")return;OL.phase="reveal";
@@ -1729,7 +1777,7 @@ function hostReveal(){
   const arr=[...OL.players.values()].sort((a,b)=>b.points-a.points||b.benar-a.benar);
   const res={};arr.forEach((p,k)=>{p.rank=k+1;res[p.id]={ok:p.lastOk,i:p.lastI,g:p.lastGain,pts:p.points,rk:k+1,st:p.streak,b:p.benar,s:p.salah+p.kosong}});
   OL.last={t:"reveal",qi:OL.qi,n:OL.qs.length,kunci:q.kunci,ans:q.opsi[q.kunci],bahas:S.set.bahas?(q.bahas||""):"",total:arr.length,res};
-  olPub(OL.last,true);
+  olPub(OL.last,true);OL.view="reveal";saveHost();
   $("#hOpts").classList.add("reveal");
   document.querySelectorAll("#hOpts .opt").forEach((d,j)=>{d.classList.add(j===q.kunci?"correct":"dim");d.querySelector(".cnt").textContent="👤 "+counts[j]});
   const nOk=counts[q.kunci];
@@ -1747,7 +1795,7 @@ function hostBoard(){
   $("#boardInfo").textContent=`Setelah soal ${OL.qi+1} dari ${OL.qs.length} · ${arr.length} peserta`;
   $("#board").innerHTML=arr.slice(0,5).map((p,i)=>`<div class="brow" style="animation-delay:${i*.1}s"><span class="rk">${i+1}</span>${avHTML(p.av)}<b>${esc(p.name)}</b>${p.streak>=2?`<span class="streak">🔥${p.streak}</span>`:""}<span class="pts">${p.points.toLocaleString("id-ID")}${p.lastGain?`<span class="gn">+${p.lastGain}</span>`:""}</span></div>`).join("")||'<div class="hint" style="text-align:center">Belum ada peserta.</div>';
   $("#boardNext").textContent=OL.qi+1>=OL.qs.length?"🏆 Hasil Akhir":"Soal berikutnya ▶";
-  show("olBoard");
+  show("olBoard");OL.view="board";saveHost();
 }
 function hostEnd(){
   if(OL.cancelTimer){OL.cancelTimer();OL.cancelTimer=null}
@@ -1758,7 +1806,7 @@ function hostPubEnd(){
   if(OL.role!=="host"||OL.phase!=="end")return;
   const n=S.qs.length;
   OL.last={t:"end",n,max:n*5,pg:pgScaled(n),total:S.ranked.length,r:S.ranked.map((p,i)=>({id:p.id,rk:i+1,pts:p.points,b:p.benar,s:p.salah+p.kosong,nil:nilai(p),ok:lulus(p),pun:p.punish||""}))};
-  olPub(OL.last,true);
+  olPub(OL.last,true);saveHost();
 }
 function hostAgain(){
   OL.qs=shuffle(pool()).slice(0,Math.min(S.set.n,pool().length));S.qs=OL.qs;OL.qi=-1;
@@ -1863,6 +1911,13 @@ function stMsg(m){
     }else if(m.ans!=null&&OL.curQi===m.qi&&$("#stQ").classList.contains("active"))stSent(m.ans);
     return;
   }
+  if(m.t==="sync"){
+    if(!OL.joined)return;
+    stSendJoin();
+    if(OL.myAns!=null&&OL.myAns>=0&&OL.answeredQi===OL.curQi&&OL.last&&OL.last.t==="q")
+      olPub({t:"ans",id:OL.me,qi:OL.curQi,i:OL.myAns,ms:OL.myMs||0},false);
+    return;
+  }
   if(m.t==="closed"){
     clearSess();
     if(!OL.joined){olClose();return (OL.onFail||stErr)("Sesi dengan PIN ini sudah ditutup guru.")}
@@ -1961,7 +2016,7 @@ function stSent(i){
 function stAnswer(i){
   if(OL.role!=="player"||OL.answeredQi===OL.curQi||!OL.last||OL.last.t!=="q")return;
   const T=OL.last.dur*1000,ms=Math.min(performance.now()-OL.qStart,T);
-  OL.answeredQi=OL.curQi;OL.myAns=i;
+  OL.answeredQi=OL.curQi;OL.myAns=i;OL.myMs=Math.round(ms);
   olPub({t:"ans",id:OL.me,qi:OL.curQi,i,ms:Math.round(ms)},false);
   SFX.click();stSent(i);
 }
@@ -1988,7 +2043,7 @@ if(JOINONLY){
   const sv=getSess();
   if(sv&&(!qpin||qpin===sv.pin))stResume(sv);else stOpenJoin(qpin||"");
 }
-else if(SRC.type==="link"&&SRC.link)loadFromLink(SRC.link,true);
+else{if(SRC.type==="link"&&SRC.link)loadFromLink(SRC.link,true);hostResumePrompt()}
 })();
 </script>
 </body>
