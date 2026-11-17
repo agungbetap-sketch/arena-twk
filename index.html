@@ -296,6 +296,22 @@ canvas.av3d:active{cursor:grabbing}
 .joinonly #stBack{display:none}
 .card.resume{border:3px solid #f59e0b;animation:pop .4s}
 html.joinonly,html.joinonly body{overscroll-behavior-y:contain}
+/* skills & toasts */
+.toasts{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:30;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(92vw,440px)}
+.toast{background:#1d1235;color:#fff;border:2px solid #facc15;border-radius:14px;padding:10px 16px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.35);text-align:center;animation:toastIn .35s cubic-bezier(.2,1.4,.4,1),toastOut .4s 2.6s forwards}
+@keyframes toastIn{from{transform:translateY(30px) scale(.8);opacity:0}}
+@keyframes toastOut{to{transform:translateY(20px);opacity:0}}
+.skillbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
+.skillbar:empty{display:none}
+.skill{font:inherit;font-weight:600;border:2px solid #facc15;background:rgba(0,0,0,.35);color:#fff;border-radius:999px;padding:8px 14px;cursor:pointer;animation:pop .4s;box-shadow:0 0 14px rgba(250,204,21,.4);transition:transform .12s}
+.skill:hover:not(:disabled){transform:scale(1.06);background:rgba(250,204,21,.25)}
+.skill:disabled{opacity:.45;cursor:default;box-shadow:none}
+.sklabel{opacity:.85;font-size:14px}
+.skact{background:#facc15;color:#1d1235;border-radius:999px;padding:6px 12px;font-weight:700;animation:pop .4s}
+.opt.gone{opacity:.12!important;filter:grayscale(1);pointer-events:none;transform:scale(.96)}
+.achline{margin-top:6px;font-weight:600;color:#7c3aed}
+.achline:empty{display:none}
+.resbox .achline{color:#fef08a}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:10}
 </style>
 </head>
@@ -332,6 +348,8 @@ html.joinonly,html.joinonly body{overscroll-behavior-y:contain}
       <div class="hint" id="pghint"></div>
       <label class="row" style="margin-top:10px"><input type="checkbox" id="ssound" checked> Efek suara</label>
       <label class="row"><input type="checkbox" id="sbahas" checked> Tampilkan pembahasan tiap soal</label>
+      <label class="row"><input type="checkbox" id="sskill" checked> 🎮 Skill &amp; achievement (power-up)</label>
+      <div class="hint">Peserta dapat skill dari achievement (3 benar beruntun, jawab benar &lt;3 detik) dan 1 skill awal: ✖2 Poin Ganda, ✂️ 50:50, 🛡️ Perisai, ⚡ Turbo, 💎 Jackpot. Maks 3 skill, 1 skill per soal. Matikan untuk latihan serius ala ujian.</div>
     </div>
   </div>
   <div class="card" id="srcCard">
@@ -411,9 +429,11 @@ Pembahasan: Rumusan resmi ada di Pembukaan UUD 1945 alinea keempat.</pre>
     <div class="qcard" id="qcard"><div id="qtopic" class="chip"></div><div id="qtext" class="qtext"></div></div>
   </div>
   <div id="opts" class="opts"></div>
+  <div id="skillbar" class="skillbar"></div>
   <div id="fb" class="fb">
     <div class="fbhead"><span id="fbtitle"></span><span id="fbgain" class="gain"></span></div>
     <div id="fbans" style="margin-top:6px"></div>
+    <div id="fbAch" class="achline"></div>
     <div id="fbbahas" class="bahas"></div>
     <button id="nextBtn" class="btn go">Lanjut ▶</button>
   </div>
@@ -434,6 +454,7 @@ Pembahasan: Rumusan resmi ada di Pembukaan UUD 1945 alinea keempat.</pre>
       <div><b id="sumnil">0</b>Nilai TWK</div>
     </div>
     <div class="hint" id="sumpg"></div>
+    <div id="sumach" class="achline" style="color:#5b21b6"></div>
     <h3 style="margin-top:14px">Penguasaan per topik</h3>
     <div id="sumtopics"></div>
   </div>
@@ -569,6 +590,7 @@ Pembahasan: Rumusan resmi ada di Pembukaan UUD 1945 alinea keempat.</pre>
   <div class="sttimer"><div class="stbar"><div id="sqBar"></div></div><b id="sqNum"></b></div>
   <div class="qcard" id="sqCard"><div id="sqTopic" class="chip"></div><div id="sqText" class="qtext"></div></div>
   <div id="sqOpts" class="opts one"></div>
+  <div id="sqSkills" class="skillbar"></div>
 </section>
 <section id="stSent" class="screen center st">
   <div id="ssIcon" style="font-size:80px">📨</div>
@@ -592,6 +614,7 @@ Pembahasan: Rumusan resmi ada di Pembukaan UUD 1945 alinea keempat.</pre>
 
 </main>
 <div id="netbar" class="netbar"></div>
+<div id="toasts" class="toasts"></div>
 
 <script>
 window.BANK_SOAL = [
@@ -1009,7 +1032,7 @@ const avHTML=(i,cls="miniav")=>`<span class="${cls}" style="background:${avBg(i)
 
 const S={
   players:store.get("players",[]).filter(p=>p&&p.name).map(p=>({name:p.name,av:avNorm(p.av)})),
-  set:Object.assign({n:15,t:20,pg:65,sound:true,bahas:true,topics:TOPICS},store.get("settings",{})),
+  set:Object.assign({n:15,t:20,pg:65,sound:true,bahas:true,skills:true,topics:TOPICS},store.get("settings",{})),
   qs:[],cur:0,qi:0,answered:true,raf:0,tStart:0,selAv:0,ranked:[],punSel:null,wheelRot:0,spinning:false
 };
 S.set.topics=S.set.topics.filter(t=>TOPICS.includes(t));
@@ -1073,7 +1096,7 @@ function renderSettings(){
   if(!opts.includes(S.set.n))S.set.n=Math.min(S.set.n,max);
   if(!opts.includes(S.set.n))opts.push(S.set.n),opts.sort((a,b)=>a-b);
   $("#sn").innerHTML=opts.map(v=>`<option value="${v}"${v===S.set.n?" selected":""}>${v} soal${v===max?" (semua)":""}</option>`).join("");
-  $("#st").value=String(S.set.t);$("#spg").value=S.set.pg;$("#ssound").checked=S.set.sound;$("#sbahas").checked=S.set.bahas;
+  $("#st").value=String(S.set.t);$("#spg").value=S.set.pg;$("#ssound").checked=S.set.sound;$("#sbahas").checked=S.set.bahas;$("#sskill").checked=S.set.skills!==false;
   updatePgHint();
 }
 function updatePgHint(){
@@ -1103,14 +1126,75 @@ $("#st").onchange=e=>{S.set.t=+e.target.value;saveSettings()};
 $("#spg").oninput=e=>{S.set.pg=Math.max(0,Math.min(150,+e.target.value||0));saveSettings();updatePgHint()};
 $("#ssound").onchange=e=>{S.set.sound=e.target.checked;saveSettings()};
 $("#sbahas").onchange=e=>{S.set.bahas=e.target.checked;saveSettings()};
+$("#sskill").onchange=e=>{S.set.skills=e.target.checked;saveSettings()};
 $("#startBtn").onclick=startGame;
+
+/* ---------- skills & achievements (power-ups, can be switched off) ---------- */
+const SKILLS={
+  double:{ic:"✖2",nm:"Poin Ganda",ds:"Poin soal ini dikali 2 kalau benar"},
+  fifty:{ic:"✂️",nm:"50:50",ds:"Buang 2 jawaban yang salah"},
+  shield:{ic:"🛡️",nm:"Perisai",ds:"Streak tidak putus kalau salah"},
+  turbo:{ic:"⚡",nm:"Turbo",ds:"Poin kecepatan penuh kalau benar"},
+  jackpot:{ic:"💎",nm:"Jackpot",ds:"Langsung dapat bonus acak 200–800 poin"}
+};
+const SKILL_KEYS=Object.keys(SKILLS),SKILL_MAX=3;
+function giveSkill(p){p.skills=p.skills||[];if(p.skills.length>=SKILL_MAX)return null;const k=SKILL_KEYS[Math.floor(Math.random()*SKILL_KEYS.length)];p.skills.push(k);return k}
+function jackpotAmt(){return [200,300,400,500,800][Math.floor(Math.random()*5)]}
+function pickHide(q){const w=shuffle(q.opsi.map((_,j)=>j).filter(j=>j!==q.kunci));return w.slice(0,Math.max(0,Math.min(2,q.opsi.length-2)))}
+function hideOpts(container,idx){(idx||[]).forEach(j=>{const b=container.querySelectorAll(".opt")[j];if(b){b.classList.add("gone");b.disabled=true}})}
+function applyAnswer(p,q,i,ms,T){
+  const ok=i===q.kunci,act=p.active||null;p.active=null;
+  const r={ok,gain:0,bonus:0,shield:false,earned:[],ach:[],act};
+  if(ok){
+    p.streak++;p.maxStreak=Math.max(p.maxStreak,p.streak);p.benar++;
+    const g=act==="turbo"?1000:Math.round(1000*(1-.5*Math.min(ms,T)/T));
+    let tot=g+Math.min(p.streak-1,5)*100;if(act==="double")tot*=2;
+    r.gain=g;r.bonus=tot-g;p.points+=tot;
+  }else{
+    if(act==="shield"&&p.streak>0)r.shield=true;else p.streak=0;
+    if(i<0)p.kosong++;else p.salah++;
+  }
+  if(S.set.skills){
+    p.achs=p.achs||[];
+    const award=(name,skill)=>{r.ach.push(name);p.achs.push(name);if(skill){const k=giveSkill(p);if(k)r.earned.push(k)}};
+    if(ok&&p.benar===1&&!p.achFirst){p.achFirst=true;award("🎯 Langkah Pertama",false)}
+    if(ok&&p.streak>0&&p.streak%3===0)award(`🔥 Beruntun ${p.streak}`,true);
+    if(ok&&ms<3000&&!p.achKilat){p.achKilat=true;award("⚡ Si Kilat",true)}
+    if(r.shield)award("🛡️ Tak Tergoyahkan",false);
+  }
+  return r;
+}
+function renderSkillBar(el,skills,canUse,activeK,on){
+  if(!on||(!skills.length&&!activeK)){el.innerHTML="";el.style.display="none";return}
+  el.style.display="";
+  el.innerHTML=`<span class="sklabel">Skill:</span>`+skills.map(k=>`<button type="button" class="skill" data-k="${k}" ${canUse?"":"disabled"} title="${SKILLS[k].ds}"><b>${SKILLS[k].ic}</b> ${SKILLS[k].nm}</button>`).join("")+
+    (activeK?`<span class="skact">Aktif: ${SKILLS[activeK].ic} ${SKILLS[activeK].nm}</span>`:"");
+}
+function showToast(html){
+  const t=document.createElement("div");t.className="toast";t.innerHTML=html;$("#toasts").appendChild(t);
+  setTimeout(()=>t.remove(),3100);
+}
+function renderLocalSkills(){
+  const p=S.players[S.cur];if(!p)return;
+  renderSkillBar($("#skillbar"),p.skills||[],!S.answered&&p.usedQi!==S.qi,p.active,S.set.skills);
+}
+function localUseSkill(k){
+  const p=S.players[S.cur];if(S.answered||p.usedQi===S.qi)return;
+  const ix=(p.skills||[]).indexOf(k);if(ix<0)return;
+  p.skills.splice(ix,1);p.usedQi=S.qi;SFX.go();
+  if(k==="fifty"){hideOpts($("#opts"),pickHide(S.qs[S.qi]));showToast("✂️ Dua jawaban salah dibuang!")}
+  else if(k==="jackpot"){const a=jackpotAmt(),from=p.points;p.points+=a;animateNum($("#qscore"),from,p.points);showToast(`💎 Jackpot! +${a} poin`);confetti(900)}
+  else{p.active=k;showToast(`${SKILLS[k].ic} ${SKILLS[k].nm} aktif!`)}
+  renderLocalSkills();
+}
+$("#skillbar").addEventListener("click",e=>{const b=e.target.closest(".skill");if(b&&!b.disabled)localUseSkill(b.dataset.k)});
 
 /* ---------- game flow ---------- */
 function startGame(){
   if(!S.players.length){const b=$("#startBtn");b.classList.remove("shake");void b.offsetWidth;b.classList.add("shake");$("#pname").focus();return}
   const n=Math.min(S.set.n,pool().length);
   S.qs=shuffle(pool()).slice(0,n);
-  S.players.forEach(p=>Object.assign(p,{points:0,benar:0,salah:0,kosong:0,streak:0,maxStreak:0,log:[],punish:null}));
+  S.players.forEach(p=>{Object.assign(p,{points:0,benar:0,salah:0,kosong:0,streak:0,maxStreak:0,log:[],punish:null,skills:[],usedQi:-1,active:null,achKilat:false,achFirst:false,achs:[]});if(S.set.skills)giveSkill(p)});
   S.cur=0;showTurn();
 }
 function showTurn(){
@@ -1154,6 +1238,7 @@ function showQ(){
   const c=$("#qcard");c.classList.remove("enter");void c.offsetWidth;c.classList.add("enter");
   $("#opts").innerHTML=q.opsi.map((o,i)=>`<button class="opt" data-i="${i}" style="background:${OPT_COL[i]};animation-delay:${.15+i*.07}s"><span class="sh"><span>${OPT_SH[i]}</span></span><span>${esc(o)}</span></button>`).join("");
   $("#fb").className="fb";
+  S.answered=false;renderLocalSkills();
   startTimer();
 }
 function startTimer(){
@@ -1182,16 +1267,17 @@ function animateNum(el,from,to,ms=700){
 function answer(i){
   if(S.answered)return;S.answered=true;cancelAnimationFrame(S.raf);
   const q=S.qs[S.qi],p=S.players[S.cur],T=S.set.t*1000,el=Math.min(performance.now()-S.tStart,T);
-  const ok=i===q.kunci;let gain=0,bonus=0;
+  const from=p.points,R=applyAnswer(p,q,i,el,T),ok=R.ok,gain=R.gain,bonus=R.bonus;
   if(ok){
-    p.streak++;p.maxStreak=Math.max(p.maxStreak,p.streak);p.benar++;
-    gain=Math.round(1000*(1-.5*el/T));bonus=Math.min(p.streak-1,5)*100;
-    const from=p.points;p.points+=gain+bonus;animateNum($("#qscore"),from,p.points);
+    animateNum($("#qscore"),from,p.points);
     const pop=document.createElement("span");pop.className="gainpop";pop.textContent="+"+(gain+bonus);$("#scorebox").appendChild(pop);setTimeout(()=>pop.remove(),1300);
     SFX.ok();
-  }else{
-    p.streak=0;if(i<0)p.kosong++;else p.salah++;SFX.bad();
-  }
+  }else SFX.bad();
+  if(R.shield)showToast("🛡️ Perisai menjaga streak-mu!");
+  R.ach.forEach(a=>showToast("🏅 Achievement: "+a));
+  R.earned.forEach(k=>showToast(`🎁 Skill baru: ${SKILLS[k].ic} ${SKILLS[k].nm}`));
+  $("#fbAch").textContent=[...R.ach.map(a=>"🏅 "+a),...R.earned.map(k=>`🎁 ${SKILLS[k].ic} ${SKILLS[k].nm}`)].join("  ·  ");
+  renderLocalSkills();
   p.log.push({topik:q.topik,ok,jawab:i,ms:Math.round(el)});
   const qa=$("#qav");qa.classList.remove("jump","sad");void qa.offsetWidth;qa.classList.add(ok?"jump":"sad");
   document.querySelectorAll(".opt").forEach((b,j)=>{
@@ -1202,7 +1288,7 @@ function answer(i){
   const fb=$("#fb");
   fb.className="fb show "+(ok?"ok":"no");
   $("#fbtitle").textContent=ok?(p.streak>=3?"Mantap! Beruntun 🔥":"Benar! 🎉"):(i<0?"Waktu habis ⏰":"Belum tepat 😅");
-  $("#fbgain").textContent=ok?`+${gain}${bonus?` (+${bonus} bonus beruntun)`:""}`:"+0";
+  $("#fbgain").textContent=ok?`+${gain+bonus}${R.act==="double"?" (✖2)":R.act==="turbo"?" (⚡ Turbo)":bonus?` (termasuk +${bonus} bonus beruntun)`:""}`:"+0";
   $("#fbans").innerHTML=`Jawaban benar: <b>${OPT_SH[q.kunci]}. ${esc(q.opsi[q.kunci])}</b>`;
   $("#fbbahas").textContent=S.set.bahas&&q.bahas?q.bahas:"";
   $("#fbbahas").style.display=S.set.bahas&&q.bahas?"":"none";
@@ -1221,7 +1307,7 @@ document.addEventListener("keydown",e=>{
   if(!$("#quiz").classList.contains("active"))return;
   if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
   const k=e.key.toLowerCase(),map={"1":0,"2":1,"3":2,"4":3,"5":4,a:0,b:1,c:2,d:3,e:4};
-  if(!S.answered&&k in map&&map[k]<S.qs[S.qi].opsi.length){answer(map[k]);e.preventDefault()}
+  if(!S.answered&&k in map&&map[k]<S.qs[S.qi].opsi.length){const ob=document.querySelectorAll("#opts .opt")[map[k]];if(ob&&ob.disabled)return;answer(map[k]);e.preventDefault()}
   else if(S.answered&&(e.key==="Enter"||e.key===" ")){next();e.preventDefault()}
 });
 $("#quitBtn").onclick=()=>{
@@ -1249,6 +1335,7 @@ function showSummary(){
   $("#sumok").textContent=p.benar;$("#sumbad").textContent=p.salah+p.kosong;
   $("#sumnil").textContent=nilai(p);
   $("#sumpg").innerHTML=`Nilai ${nilai(p)} dari ${n*5} · passing grade ${pgScaled(n)} · kosong/waktu habis: ${p.kosong} · rekor beruntun: ${p.maxStreak}`;
+  $("#sumach").textContent=S.set.skills&&p.achs&&p.achs.length?"🏅 Achievement: "+p.achs.join(" · "):"";
   const ts=topicStats(p);
   $("#sumtopics").innerHTML=ts.map(x=>{const pct=Math.round(x.r*100),col=pct>=70?"#22c55e":pct>=40?"#f59e0b":"#ef4444";
     return `<div class="tbar"><span>${esc(x.t)}</span><div class="tr"><div style="background:${col}" data-w="${pct}"></div></div><b>${x.ok}/${x.n}</b></div>`}).join("");
@@ -1675,7 +1762,7 @@ function renderLobbyInfo(){
 function saveHost(){
   if(OL.role!=="host"||!OL.pin)return;
   store.set("host",{pin:OL.pin,qs:OL.qs,qi:OL.qi,phase:OL.phase,view:OL.view||"",players:[...OL.players.values()],
-    answers:[...OL.answers.entries()],qWall:OL.qWall||0,set:{t:S.set.t,bahas:S.set.bahas,pg:S.set.pg},last:OL.last,ts:Date.now()});
+    answers:[...OL.answers.entries()],qWall:OL.qWall||0,set:{t:S.set.t,bahas:S.set.bahas,pg:S.set.pg,skills:S.set.skills},last:OL.last,ts:Date.now()});
 }
 function getHostSess(){const h=store.get("host",null);return h&&h.pin&&Array.isArray(h.qs)&&Date.now()-(h.ts||0)<SESS_TTL?h:null}
 async function hostRestore(sv){
@@ -1721,7 +1808,7 @@ function hostLobbyPub(){
   $("#lobStart").disabled=!ps.length;
   $("#lobStart").textContent=ps.length?`Mulai Kuis (${ps.length} peserta) ▶`:"Mulai Kuis ▶";
 }
-function newOnlinePlayer(id,name,av){return {id,name,av,points:0,benar:0,salah:0,kosong:0,streak:0,maxStreak:0,log:[],punish:null}}
+function newOnlinePlayer(id,name,av){return {id,name,av,points:0,benar:0,salah:0,kosong:0,streak:0,maxStreak:0,log:[],punish:null,skills:[],usedQi:-1,active:null,achKilat:false,achFirst:false,achs:[]}}
 function hostMsg(m){
   if(!m||typeof m.id!=="string")return;
   if(m.t==="join"){
@@ -1732,11 +1819,23 @@ function hostMsg(m){
       const taken=n=>[...OL.players.values()].some(x=>x.name.toLowerCase()===n.toLowerCase());
       if(taken(name)){let k=2;while(taken(name+" "+k))k++;name=name+" "+k}
       p=newOnlinePlayer(m.id,name,avNorm(m.av));OL.players.set(m.id,p);SFX.click();
+      if(S.set.skills&&OL.phase!=="lobby"&&OL.phase!=="end")giveSkill(p);
     }
-    const ack={t:"ack",id:m.id,name:p.name,pts:p.points,b:p.benar,s:p.salah+p.kosong,st:p.streak};
+    const ack={t:"ack",id:m.id,name:p.name,pts:p.points,b:p.benar,s:p.salah+p.kosong,st:p.streak,sk:p.skills||[],usedQi:p.usedQi,act:p.active||null};
     if(OL.phase==="q"){const a=OL.answers.get(m.id);ack.qi=OL.qi;ack.ans=a?a.i:null;ack.remain=Math.max(0,Math.round(S.set.t*1000-(performance.now()-(OL.qT0||0))))}
     olPub(ack,false);saveHost();
     if(OL.phase==="lobby")hostLobbyPub();else updAns();
+  }else if(m.t==="skill"){
+    if(!S.set.skills||OL.phase!=="q"||m.qi!==OL.qi)return;
+    const p=OL.players.get(m.id);if(!p||OL.answers.has(m.id)||p.usedQi===OL.qi||!SKILLS[m.k])return;
+    const ix=(p.skills||[]).indexOf(m.k);if(ix<0)return;
+    p.skills.splice(ix,1);p.usedQi=OL.qi;
+    const rep={t:"skillok",id:m.id,qi:OL.qi,k:m.k,skills:p.skills.slice()};
+    if(m.k==="fifty")rep.hide=pickHide(OL.qs[OL.qi]);
+    else if(m.k==="jackpot"){const a=jackpotAmt();p.points+=a;rep.jp=a;rep.pts=p.points}
+    else p.active=m.k;
+    olPub(rep,false);saveHost();
+    showToast(`${esc(p.name)} memakai ${SKILLS[m.k].ic} ${SKILLS[m.k].nm}${rep.jp?` (+${rep.jp})`:""}`);
   }else if(m.t==="ans"){
     if(OL.phase!=="q"||m.qi!==OL.qi||!OL.players.has(m.id)||OL.answers.has(m.id))return;
     const q=OL.qs[OL.qi],i=m.i|0;if(i<0||i>=q.opsi.length)return;
@@ -1750,7 +1849,8 @@ function hostQuestion(remain){
   const q=OL.qs[OL.qi],resume=typeof remain==="number";OL.phase="q";
   if(!resume){OL.answers=new Map();OL.qWall=Date.now()}
   OL.qT0=performance.now()-(resume?Math.max(0,S.set.t*1000-remain):0);
-  OL.last={t:"q",qi:OL.qi,n:OL.qs.length,q:q.q,topik:q.topik,opsi:q.opsi,dur:S.set.t};olPub(OL.last,true);
+  OL.last={t:"q",qi:OL.qi,n:OL.qs.length,q:q.q,topik:q.topik,opsi:q.opsi,dur:S.set.t,sk:S.set.skills?1:0};
+  if(S.set.skills){const skm={};OL.players.forEach(p=>{skm[p.id]=p.skills||[]});OL.last.skm=skm}olPub(OL.last,true);
   show("olQ");
   $("#hProg").style.width=(OL.qi/OL.qs.length*100)+"%";$("#hProgTxt").textContent=`Soal ${OL.qi+1} / ${OL.qs.length}`;
   $("#hTopic").textContent=q.topik;$("#hText").textContent=q.q;
@@ -1768,14 +1868,12 @@ function hostReveal(){
   if(OL.cancelTimer){OL.cancelTimer();OL.cancelTimer=null}
   const q=OL.qs[OL.qi],T=S.set.t*1000,counts=q.opsi.map(()=>0);
   OL.players.forEach(p=>{
-    const a=OL.answers.get(p.id),i=a?a.i:-1,ok=i===q.kunci;let g=0;
-    if(ok){p.streak++;p.maxStreak=Math.max(p.maxStreak,p.streak);p.benar++;const s=scoreFor(a.ms,T,p.streak);g=s.gain+s.bonus;p.points+=g}
-    else{p.streak=0;if(i<0)p.kosong++;else p.salah++}
+    const a=OL.answers.get(p.id),i=a?a.i:-1,R=applyAnswer(p,q,i,a?a.ms:T,T),ok=R.ok,g=R.gain+R.bonus;
     if(i>=0)counts[i]++;
-    p.log.push({topik:q.topik,ok,jawab:i,ms:a?a.ms:T});p.lastGain=g;p.lastI=i;p.lastOk=ok;
+    p.log.push({topik:q.topik,ok,jawab:i,ms:a?a.ms:T});p.lastGain=g;p.lastI=i;p.lastOk=ok;p.lastR=R;
   });
   const arr=[...OL.players.values()].sort((a,b)=>b.points-a.points||b.benar-a.benar);
-  const res={};arr.forEach((p,k)=>{p.rank=k+1;res[p.id]={ok:p.lastOk,i:p.lastI,g:p.lastGain,pts:p.points,rk:k+1,st:p.streak,b:p.benar,s:p.salah+p.kosong}});
+  const res={};arr.forEach((p,k)=>{p.rank=k+1;res[p.id]={ok:p.lastOk,i:p.lastI,g:p.lastGain,pts:p.points,rk:k+1,st:p.streak,b:p.benar,s:p.salah+p.kosong,sk:p.skills||[],nw:p.lastR?p.lastR.earned:[],ach:p.lastR?p.lastR.ach:[],sh:p.lastR?p.lastR.shield:false,act:p.lastR?p.lastR.act:null}});
   OL.last={t:"reveal",qi:OL.qi,n:OL.qs.length,kunci:q.kunci,ans:q.opsi[q.kunci],bahas:S.set.bahas?(q.bahas||""):"",total:arr.length,res};
   olPub(OL.last,true);OL.view="reveal";saveHost();
   $("#hOpts").classList.add("reveal");
@@ -1815,7 +1913,11 @@ function hostAgain(){
   show("olLobby");hostLobbyPub();
 }
 $("#olCreate").onclick=hostCreate;
-$("#lobStart").onclick=()=>{if(!OL.players.size)return;OL.qi=0;hostQuestion()};
+$("#lobStart").onclick=()=>{
+  if(!OL.players.size)return;
+  if(S.set.skills)OL.players.forEach(p=>{if(!(p.skills||[]).length)giveSkill(p)});
+  OL.qi=0;hostQuestion();
+};
 $("#lobCancel").onclick=()=>{olClose(true);show("home")};
 $("#lobCopy").onclick=async()=>{
   const b=$("#lobCopy");if(!OL.invite)return;
@@ -1899,6 +2001,8 @@ function stMsg(m){
     if(m.id!==OL.me)return;
     const first=!OL.joined;OL.joined=true;OL.myName=m.name||OL.myName;clearTimeout(OL.joinTimer);
     if(typeof m.pts==="number"){OL.score=m.pts;OL.ok=m.b|0;OL.bad=m.s|0}
+    if(Array.isArray(m.sk))OL.skills=m.sk;
+    if(m.qi!=null&&m.usedQi===m.qi){OL.skillUsedQi=m.qi;if(m.act){OL.activeSk=m.act;OL.activeQi=m.qi}}
     if(m.qi!=null){
       if(m.ans!=null){OL.answeredQi=m.qi;OL.myAns=m.ans}
       else if(typeof m.remain==="number")OL.remain={qi:m.qi,ms:m.remain};
@@ -1910,6 +2014,14 @@ function stMsg(m){
       stRender(OL.last||{t:"lobby",players:[]});
     }else if(m.ans!=null&&OL.curQi===m.qi&&$("#stQ").classList.contains("active"))stSent(m.ans);
     return;
+  }
+  if(m.t==="skillok"){
+    if(m.id!==OL.me)return;
+    OL.skills=m.skills||[];OL.skillUsedQi=m.qi;
+    if(m.hide){OL.hideQ={qi:m.qi,idx:m.hide};if(OL.curQi===m.qi)hideOpts($("#sqOpts"),m.hide);showToast("✂️ Dua jawaban salah dibuang!")}
+    else if(m.jp){OL.score=m.pts;stHud();showToast(`💎 Jackpot! +${m.jp} poin`);confetti(900)}
+    else{OL.activeSk=m.k;OL.activeQi=m.qi;showToast(`${SKILLS[m.k].ic} ${SKILLS[m.k].nm} aktif!`)}
+    stRenderSkills();return;
   }
   if(m.t==="sync"){
     if(!OL.joined)return;
@@ -1934,7 +2046,7 @@ function stHud(){
 function stRender(m){
   if(m.t==="lobby"){
     cancelAnimationFrame(OL.stRaf);
-    Object.assign(OL,{curQi:-1,answeredQi:-1,revealQi:-1,score:0,ok:0,bad:0,endShown:false,lastPun:""});
+    Object.assign(OL,{curQi:-1,answeredQi:-1,revealQi:-1,score:0,ok:0,bad:0,endShown:false,lastPun:"",skills:[],skillUsedQi:-1,activeSk:null,hideQ:null});
     setAv($("#swAv"),OL.myAv,"full");$("#swAv").dataset.anim="wave";$("#swName").textContent=OL.myName;
     $("#swInfo").textContent=`PIN ${OL.pin} · ${m.players?m.players.length:0} peserta di ruang. Lihat layar guru, kuis segera dimulai…`;
     show("stWait");return;
@@ -1942,6 +2054,7 @@ function stRender(m){
   if(m.t==="q"){
     if(m.qi===OL.curQi&&($("#stQ").classList.contains("active")||$("#stSent").classList.contains("active")))return;
     OL.curQi=m.qi;
+    if(m.skm&&OL.skillUsedQi!==m.qi)OL.skills=m.skm[OL.me]||[];
     if(OL.answeredQi===m.qi){stSent(OL.myAns!=null&&OL.myAns>=0?OL.myAns:(OL.myAns===-1?-1:null));return}
     OL.myAns=null;
     stHud();
@@ -1950,6 +2063,8 @@ function stRender(m){
     const c=$("#sqCard");c.classList.remove("enter");void c.offsetWidth;c.classList.add("enter");
     $("#sqOpts").innerHTML=m.opsi.map((o,i)=>`<button class="opt" data-i="${i}" style="background:${OPT_COL[i]};animation-delay:${.1+i*.06}s"><span class="sh"><span>${OPT_SH[i]}</span></span><span>${esc(o)}</span></button>`).join("");
     show("stQ");SFX.go();
+    if(OL.hideQ&&OL.hideQ.qi===m.qi)hideOpts($("#sqOpts"),OL.hideQ.idx);
+    stRenderSkills();
     const T=m.dur*1000,bar=$("#sqBar"),num=$("#sqNum");let last=null;
     OL.qStart=performance.now();
     if(OL.remain&&OL.remain.qi===m.qi){OL.qStart-=Math.max(0,T-OL.remain.ms);OL.remain=null}
@@ -1973,11 +2088,16 @@ function stRender(m){
     if(A3.failed){fig.classList.remove("jump","sad");void fig.offsetWidth;if(r)fig.classList.add(r.ok?"jump":"sad")}
     if(!r){box.className="resbox na";box.innerHTML=`<div class="big">Lewat 🙂</div>Kamu masuk setelah soal ini dimulai.`}
     else{
-      OL.score=r.pts;OL.ok=r.b;OL.bad=r.s;
+      OL.score=r.pts;OL.ok=r.b;OL.bad=r.s;if(Array.isArray(r.sk))OL.skills=r.sk;OL.activeSk=null;
+      if(r.sh)showToast("🛡️ Perisai menjaga streak-mu!");
+      (r.ach||[]).forEach(a=>showToast("🏅 Achievement: "+a));
+      (r.nw||[]).forEach(k=>SKILLS[k]&&showToast(`🎁 Skill baru: ${SKILLS[k].ic} ${SKILLS[k].nm}`));
       box.className="resbox "+(r.ok?"ok":"no");
       box.innerHTML=`<div class="big">${r.ok?"Benar! 🎉":(r.i<0?"Tidak menjawab ⏰":"Salah 😅")}</div>
         <div style="font-size:22px;font-weight:700">${r.ok?"+"+r.g+" poin":"+0 poin"}${r.st>=2?` · 🔥 ${r.st}x beruntun`:""}</div>
-        <div style="margin-top:8px">Peringkat <b>${r.rk}</b> dari ${m.total} · total <b>${r.pts.toLocaleString("id-ID")}</b> poin</div>`;
+        <div style="margin-top:8px">Peringkat <b>${r.rk}</b> dari ${m.total} · total <b>${r.pts.toLocaleString("id-ID")}</b> poin</div>
+        ${r.act&&SKILLS[r.act]?`<div class="achline">Skill dipakai: ${SKILLS[r.act].ic} ${SKILLS[r.act].nm}</div>`:""}
+        ${[...(r.ach||[]).map(a=>"🏅 "+esc(a)),...(r.nw||[]).filter(k=>SKILLS[k]).map(k=>`🎁 ${SKILLS[k].ic} ${SKILLS[k].nm}`)].length?`<div class="achline">${[...(r.ach||[]).map(a=>"🏅 "+esc(a)),...(r.nw||[]).filter(k=>SKILLS[k]).map(k=>`🎁 ${SKILLS[k].ic} ${SKILLS[k].nm}`)].join(" · ")}</div>`:""}`;
       r.ok?SFX.ok():SFX.bad();
     }
     $("#srAns").innerHTML=`Jawaban benar: <b>${OPT_SH[m.kunci]}. ${esc(m.ans)}</b>`;
@@ -2013,6 +2133,21 @@ function stSent(i){
   }
   show("stSent");
 }
+function stRenderSkills(){
+  const m=OL.last&&OL.last.t==="q"?OL.last:null;
+  if(!m){$("#sqSkills").innerHTML="";return}
+  const can=OL.answeredQi!==m.qi&&OL.skillUsedQi!==m.qi;
+  renderSkillBar($("#sqSkills"),OL.skills||[],can,OL.activeSk&&OL.activeQi===m.qi?OL.activeSk:null,!!m.sk);
+}
+function stUseSkill(k){
+  const m=OL.last&&OL.last.t==="q"?OL.last:null;
+  if(!m||OL.answeredQi===m.qi||OL.skillUsedQi===m.qi)return;
+  const ix=(OL.skills||[]).indexOf(k);if(ix<0)return;
+  OL.skills.splice(ix,1);OL.skillUsedQi=m.qi;SFX.go();
+  olPub({t:"skill",id:OL.me,qi:m.qi,k},false);
+  stRenderSkills();
+}
+$("#sqSkills").addEventListener("click",e=>{const b=e.target.closest(".skill");if(b&&!b.disabled)stUseSkill(b.dataset.k)});
 function stAnswer(i){
   if(OL.role!=="player"||OL.answeredQi===OL.curQi||!OL.last||OL.last.t!=="q")return;
   const T=OL.last.dur*1000,ms=Math.min(performance.now()-OL.qStart,T);
