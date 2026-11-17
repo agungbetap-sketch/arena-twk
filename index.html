@@ -257,7 +257,7 @@ div.opt{cursor:default}
 .miniav{overflow:hidden}
 .miniav svg,.bigav svg,.crfig svg,.podfig svg,.opt-ic svg{width:100%;height:100%;display:block}
 .bigav{width:150px;height:190px;border-radius:28px;font-size:0;padding:8px 10px 4px;box-shadow:0 0 0 6px rgba(255,255,255,.25),0 10px 0 rgba(0,0,0,.2)}
-.bigav.small{width:96px;height:122px;border-radius:20px;padding:6px 6px 2px;animation:none}
+.bigav.small{width:124px;height:158px;border-radius:20px;padding:6px 6px 2px;animation:none}
 .podfig{width:96px;height:132px;animation:pop .5s backwards}
 .podfig svg{filter:drop-shadow(0 4px 0 rgba(0,0,0,.25))}
 .jump{animation:jump .7s cubic-bezier(.3,1.6,.5,1)!important}
@@ -284,6 +284,14 @@ div.opt{cursor:default}
 .opt-ic{width:44px;height:44px;border-radius:10px;border:2px solid #e5e0f5;padding:2px;cursor:pointer;transition:transform .12s}
 .opt-ic:hover{transform:scale(1.08)}
 .opt-ic.sel{border-color:#7c3aed;box-shadow:0 0 0 2px #7c3aed}
+/* 3D stages */
+.has3d{position:relative}
+.has3d>svg{visibility:hidden}
+canvas.av3d{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:pan-y}
+canvas.av3d:active{cursor:grabbing}
+.bigav.has3d,.crfig.has3d svg{animation:none}
+.rothint{font-size:11px;margin-top:-4px}
+.podfig{width:110px;height:150px}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:10}
 </style>
 </head>
@@ -662,6 +670,28 @@ function avRandom(){const n=AVN(),o={};AVK.forEach((k,i)=>o[k]=Math.floor(Math.r
 function mix(hex,to,t){const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));const a=p(hex),b=p(to);return "#"+a.map((v,i)=>Math.round(v+(b[i]-v)*t).toString(16).padStart(2,"0")).join("")}
 function avBg(code){return mix(SHIRT[avParse(code).b],"#ffffff",.55)}
 const rr=(x,y,w,h,r)=>`M${x+r} ${y}H${x+w-r}Q${x+w} ${y} ${x+w} ${y+r}V${y+h-r}Q${x+w} ${y+h} ${x+w-r} ${y+h}H${x+r}Q${x} ${y+h} ${x} ${y+h-r}V${y+r}Q${x} ${y} ${x+r} ${y}Z`;
+function patternMarkup(a){
+  const S='stroke="rgba(0,0,0,.25)" stroke-width="1.2"',shD=mix(SHIRT[a.b],"#000000",.22);let g="";
+  if(a.m===1)[48,57,66,75].forEach(y=>{g+=`<rect x="27.6" y="${y}" width="44.8" height="4" fill="#fff" opacity=".45"/>`});
+  if(a.m===2){let pts=[];for(let i=0;i<10;i++){const r=i%2?4.2:10,an=-Math.PI/2+i*Math.PI/5;pts.push((50+r*Math.cos(an)).toFixed(1)+","+(60+r*Math.sin(an)).toFixed(1))}g+=`<polygon points="${pts.join(" ")}" fill="${a.b===2?"#fff":"#fde047"}" ${S}/>`}
+  if(a.m===3){const tie=a.b===0?"#1e3a8a":"#b91c1c";g+=`<path d="M50 49 L46 54 L49 73 L51 73 L54 54 Z" fill="${tie}" ${S}/><path d="M37 40 L50 50 L63 40 Z" fill="#fff" ${S}/>`}
+  if(a.m===4)g+=`<rect x="37" y="62" width="26" height="13" rx="3" fill="${shD}"/><path d="M45 42 V53 M55 42 V53" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`;
+  return g;
+}
+function faceMarkup(a){
+  const E="#2b1d14",line=d=>`<path d="${d}" stroke="${E}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+  const eyes=(ry)=>`<ellipse cx="43" cy="20" rx="2.6" ry="${ry||3.2}" fill="${E}"/><ellipse cx="57" cy="20" rx="2.6" ry="${ry||3.2}" fill="${E}"/>`;
+  const happy=line("M40 21 Q43 16.5 46 21 M54 21 Q57 16.5 60 21"),smile=line("M43 27.5 Q50 33 57 27.5");
+  return [
+    eyes()+smile,
+    happy+`<path d="M42 26 Q50 37 58 26 Z" fill="${E}"/><path d="M46 31.6 Q50 34.6 54 31.6 Z" fill="#e45b6b"/>`,
+    `<rect x="37.5" y="16" width="11" height="7" rx="2.5" fill="#111"/><rect x="51.5" y="16" width="11" height="7" rx="2.5" fill="#111"/><path d="M48.5 18.5 H51.5" stroke="#111" stroke-width="1.6"/><path d="M39.5 17.6 H43" stroke="#fff" stroke-width="1" opacity=".7"/>`+line("M45 29 Q51 31.5 56 27"),
+    `<ellipse cx="43" cy="20" rx="2.6" ry="3.2" fill="${E}"/>`+line("M54 20.5 Q57 18 60 20.5")+smile,
+    eyes(4)+`<ellipse cx="50" cy="29.5" rx="3" ry="3.6" fill="${E}"/>`,
+    line("M39 15.5 L46 17.5 M61 15.5 L54 17.5")+eyes(2.6)+line("M45 29 H55"),
+    happy+smile+`<circle cx="39.5" cy="25" r="2.6" fill="#f472b6" opacity=".55"/><circle cx="60.5" cy="25" r="2.6" fill="#f472b6" opacity=".55"/>`
+  ][a.w];
+}
 function avSVG(code,mode){
   mode=mode||"bust";
   const a=avParse(code),sk=SKIN[a.s],sh=SHIRT[a.b],pa=PANTS[a.c],hc=HAIRC[a.r];
@@ -678,24 +708,12 @@ function avSVG(code,mode){
   g+=`<rect x="12" y="40" width="14" height="38" rx="4" fill="${sk}" ${S}/><rect x="74" y="40" width="14" height="38" rx="4" fill="${sk}" ${S}/>`;
   g+=`<rect x="12" y="40" width="14" height="${sl}" rx="4" fill="${sh}" ${S}/><rect x="74" y="40" width="14" height="${sl}" rx="4" fill="${sh}" ${S}/>`;
   g+=`<rect x="27" y="40" width="46" height="41" rx="4" fill="${sh}" ${S}/>`;
-  if(a.m===1)[48,57,66,75].forEach(y=>{g+=`<rect x="27.6" y="${y}" width="44.8" height="4" fill="#fff" opacity=".45"/>`});
-  if(a.m===2){let pts=[];for(let i=0;i<10;i++){const r=i%2?4.2:10,an=-Math.PI/2+i*Math.PI/5;pts.push((50+r*Math.cos(an)).toFixed(1)+","+(60+r*Math.sin(an)).toFixed(1))}g+=`<polygon points="${pts.join(" ")}" fill="${a.b===2?"#fff":"#fde047"}" ${S}/>`}
-  if(a.m===3){const tie=a.b===0?"#1e3a8a":"#b91c1c";g+=`<path d="M50 49 L46 54 L49 73 L51 73 L54 54 Z" fill="${tie}" ${S}/><path d="M37 40 L50 50 L63 40 Z" fill="#fff" ${S}/>`}
-  if(a.m===4)g+=`<rect x="37" y="62" width="26" height="13" rx="3" fill="${shD}"/><path d="M45 42 V53 M55 42 V53" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="${rr(30,27,40,16,8)}" fill="${shD}" ${S}/>`;
+  g+=patternMarkup(a);
+  if(a.m===4)g+=`<path d="${rr(30,27,40,16,8)}" fill="${shD}" ${S}/>`;
   if(a.t===3)g+=`<path d="${rr(29,1,42,48,9)}" fill="${hc}" ${S}/>`;
   g+=`<path d="${rr(33,5,34,33,8)}" fill="${sk}" ${S}/>`;
   if(a.t===4)g+=`<path fill-rule="evenodd" fill="${hc}" ${S} d="${rr(26,0,48,54,16)} ${rr(37,10,26,26,10)}"/>`;
-  const eyes=(ry)=>`<ellipse cx="43" cy="20" rx="2.6" ry="${ry||3.2}" fill="${E}"/><ellipse cx="57" cy="20" rx="2.6" ry="${ry||3.2}" fill="${E}"/>`;
-  const happy=line("M40 21 Q43 16.5 46 21 M54 21 Q57 16.5 60 21"),smile=line("M43 27.5 Q50 33 57 27.5");
-  g+=[
-    eyes()+smile,
-    happy+`<path d="M42 26 Q50 37 58 26 Z" fill="${E}"/><path d="M46 31.6 Q50 34.6 54 31.6 Z" fill="#e45b6b"/>`,
-    `<rect x="37.5" y="16" width="11" height="7" rx="2.5" fill="#111"/><rect x="51.5" y="16" width="11" height="7" rx="2.5" fill="#111"/><path d="M48.5 18.5 H51.5" stroke="#111" stroke-width="1.6"/><path d="M39.5 17.6 H43" stroke="#fff" stroke-width="1" opacity=".7"/>`+line("M45 29 Q51 31.5 56 27"),
-    `<ellipse cx="43" cy="20" rx="2.6" ry="3.2" fill="${E}"/>`+line("M54 20.5 Q57 18 60 20.5")+smile,
-    eyes(4)+`<ellipse cx="50" cy="29.5" rx="3" ry="3.6" fill="${E}"/>`,
-    line("M39 15.5 L46 17.5 M61 15.5 L54 17.5")+eyes(2.6)+line("M45 29 H55"),
-    happy+smile+`<circle cx="39.5" cy="25" r="2.6" fill="#f472b6" opacity=".55"/><circle cx="60.5" cy="25" r="2.6" fill="#f472b6" opacity=".55"/>`
-  ][a.w];
+  g+=faceMarkup(a);
   const shortHair=`<path d="${rr(31,2,38,11,6)}" fill="${hc}" ${S}/><rect x="31" y="8" width="4" height="11" rx="2" fill="${hc}"/><rect x="65" y="8" width="4" height="11" rx="2" fill="${hc}"/>`;
   g+=[
     "",
@@ -711,7 +729,156 @@ function avSVG(code,mode){
   ][a.t];
   return `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${g}</svg>`;
 }
-function setAv(el,code,mode){el.style.background=avBg(code);el.innerHTML=avSVG(code,mode)}
+function setAv(el,code,mode){
+  el.style.background=avBg(code);
+  if(mode==="full"){
+    if(el.dataset.av3d!==code||!el.querySelector("svg")){el.innerHTML=avSVG(code,"full");el.dataset.av3d=code}
+    if(!el.dataset.anim)el.dataset.anim="idle";
+  }else el.innerHTML=avSVG(code,mode);
+}
+
+/* ---------- 3D characters (Three.js, one shared WebGL context, copied into each stage canvas) ---------- */
+const THREE_URL="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+const A3={ready:false,loading:false,failed:false,T:null,renderer:null,scene:null,camera:null,shadow:null,stages:new Set(),byEl:new Map(),rot:{},RW:240,RH:300};
+function svgTex(inner,vb,w,h,bg){
+  const T3=A3.T,cv=document.createElement("canvas");cv.width=w;cv.height=h;
+  const ctx=cv.getContext("2d");ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+  const tex=new T3.CanvasTexture(cv);
+  const img=new Image();
+  img.onload=()=>{ctx.drawImage(img,0,0,w,h);tex.needsUpdate=true};
+  img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" width="${w}" height="${h}">${inner}</svg>`);
+  return tex;
+}
+function build3D(code){
+  const T3=A3.T,a=avParse(code);
+  const sk=SKIN[a.s],sh=SHIRT[a.b],pa=PANTS[a.c],hc=HAIRC[a.r];
+  const mat=c=>new T3.MeshLambertMaterial({color:c});
+  const box=(w,h,d,m,x,y,z)=>{const o=new T3.Mesh(new T3.BoxGeometry(w,h,d),m);o.position.set(x,y,z);return o};
+  const mS=mat(sk),mSh=mat(sh),mPa=mat(pa),mPaD=mat(mix(pa,"#000000",.35)),mH=mat(hc),mHD=mat(mix(hc,"#000000",.3)),mShD=mat(mix(sh,"#000000",.22));
+  const root=new T3.Group(),body=new T3.Group();root.add(body);
+  const legL=new T3.Group(),legR=new T3.Group();legL.position.set(-1.15,4.2,0);legR.position.set(1.15,4.2,0);
+  [legL,legR].forEach(L=>{L.add(box(2.05,3.4,2.0,mPa,0,-1.7,0));L.add(box(2.12,0.8,2.15,mPaD,0,-3.8,0.05));body.add(L)});
+  const mPat=new T3.MeshLambertMaterial({map:svgTex(patternMarkup(a),"27 40 46 41",184,164,sh)});
+  const torso=new T3.Mesh(new T3.BoxGeometry(4.6,4.1,2.2),[mSh,mSh,mSh,mSh,mPat,mSh]);torso.position.set(0,6.25,0);body.add(torso);
+  if(a.m===4)body.add(box(3.6,1.3,0.9,mShD,0,8.5,-1.35));
+  const sl=a.m===4?3.0:2.0;
+  const arm=x=>{const g=new T3.Group();g.position.set(x,8.2,0);g.add(box(1.4,sl,1.4,mSh,0,-sl/2,0));g.add(box(1.34,3.8-sl,1.34,mS,0,-sl-(3.8-sl)/2,0));body.add(g);return g};
+  const armL=arm(-3.05),armR=arm(3.05);
+  const headG=new T3.Group();headG.position.set(0,8.35,0);body.add(headG);
+  const mF=new T3.MeshLambertMaterial({map:svgTex(faceMarkup(a),"33 5 34 33",136,132,sk)});
+  const head=new T3.Mesh(new T3.BoxGeometry(3.4,3.3,3.0),[mS,mS,mS,mS,mF,mS]);head.position.y=1.8;headG.add(head);
+  const yT=3.45,hy=1.8,H=(...p)=>headG.add(box(...p));
+  const shortHair=()=>{H(3.62,0.8,3.22,mH,0,yT+0.2,0);H(3.62,2.4,0.36,mH,0,yT-1.0,-1.62);H(0.2,1.2,2.2,mH,-1.76,hy+0.7,-0.2);H(0.2,1.2,2.2,mH,1.76,hy+0.7,-0.2)};
+  switch(a.t){
+    case 1:shortHair();break;
+    case 2:shortHair();for(let i=0;i<5;i++){const c=new T3.Mesh(new T3.ConeGeometry(0.6,1.4,4),mH);c.position.set(-1.3+i*0.65,yT+0.95,i%2?0.45:-0.45);c.rotation.z=(2-i)*0.18;headG.add(c)}break;
+    case 3:H(3.72,0.8,3.32,mH,0,yT+0.2,0);H(3.9,4.6,0.5,mH,0,hy-0.6,-1.72);H(0.3,3.6,3.0,mH,-1.86,hy-0.3,-0.1);H(0.3,3.6,3.0,mH,1.86,hy-0.3,-0.1);break;
+    case 4:H(4.0,0.5,3.5,mH,0,yT+0.2,0);H(0.42,4.2,3.5,mH,-1.92,hy-0.3,0);H(0.42,4.2,3.5,mH,1.92,hy-0.3,0);H(4.0,4.2,0.4,mH,0,hy-0.3,-1.7);H(4.0,0.6,0.35,mH,0,yT-0.2,1.6);H(3.6,0.55,0.4,mH,0,hy-1.85,1.45);
+      body.add(box(5.0,1.7,2.9,mH,0,7.85,0));break;
+    case 5:H(3.0,1.0,2.7,mat("#161616"),0,yT+0.45,0);break;
+    case 6:H(3.62,0.9,3.32,mH,0,yT+0.35,0);H(3.0,0.18,1.7,mHD,0,yT+0.0,2.2);break;
+    case 7:{H(3.72,1.2,3.32,mH,0,yT+0.45,0);H(3.82,0.45,3.42,mHD,0,yT-0.1,0);const s=new T3.Mesh(new T3.SphereGeometry(0.48,12,8),mat("#ffffff"));s.position.set(0,yT+1.35,0);headG.add(s);break}
+    case 8:shortHair();H(3.56,0.4,3.16,mat(a.r===5?"#3b82f6":"#ef4444"),0,yT-0.45,0);break;
+    case 9:{const gold=new T3.MeshLambertMaterial({color:"#fbbf24",side:T3.DoubleSide});const c=new T3.Mesh(new T3.CylinderGeometry(1.5,1.5,0.7,8,1,true),gold);c.position.y=yT+0.35;headG.add(c);
+      for(let i=0;i<4;i++){const k=new T3.Mesh(new T3.ConeGeometry(0.32,0.75,4),gold);const an=i/4*Math.PI*2+Math.PI/4;k.position.set(Math.sin(an)*1.45,yT+1.05,Math.cos(an)*1.45);headG.add(k)}
+      const gem=new T3.Mesh(new T3.SphereGeometry(0.22,8,6),mat("#ef4444"));gem.position.set(0,yT+0.35,1.5);headG.add(gem);break}
+  }
+  root.userData={body,legL,legR,armL,armR,headG};
+  return root;
+}
+function init3D(){
+  if(A3.loading||A3.ready||A3.failed)return;
+  A3.loading=true;
+  loadLib(THREE_URL,"THREE").then(T3=>{
+    try{
+      const pr=Math.min(window.devicePixelRatio||1,2);
+      A3.RW=Math.round(240*pr);A3.RH=Math.round(300*pr);
+      const r=new T3.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+      r.setPixelRatio(1);r.setSize(A3.RW,A3.RH,false);r.setClearColor(0x000000,0);
+      const sc=new T3.Scene();
+      sc.add(new T3.HemisphereLight(0xffffff,0x7c6aa8,0.85));
+      const dl=new T3.DirectionalLight(0xffffff,0.75);dl.position.set(6,12,10);sc.add(dl);
+      const shadow=new T3.Mesh(new T3.CircleGeometry(3.2,24),new T3.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.18}));
+      shadow.rotation.x=-Math.PI/2;shadow.position.y=0.02;sc.add(shadow);
+      const cam=new T3.PerspectiveCamera(34,A3.RW/A3.RH,0.1,100);cam.position.set(0,7.6,24);cam.lookAt(0,6.7,0);
+      Object.assign(A3,{T:T3,renderer:r,scene:sc,camera:cam,shadow,ready:true,loading:false});
+      scan3D();requestAnimationFrame(loop3D);
+    }catch(e){A3.failed=true;A3.loading=false}
+  }).catch(()=>{A3.failed=true;A3.loading=false});
+}
+function disposeStage(st){
+  A3.stages.delete(st);if(A3.byEl.get(st.el)===st)A3.byEl.delete(st.el);
+  st.char.traverse(o=>{if(o.geometry)o.geometry.dispose();(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m){if(m.map)m.map.dispose();m.dispose()}})});
+  if(st.cv.parentNode)st.cv.remove();
+}
+function makeStage(el){
+  const pr=Math.min(window.devicePixelRatio||1,2),cv=document.createElement("canvas");
+  cv.className="av3d";cv.width=Math.max(60,Math.round((el.clientWidth||120)*pr));cv.height=Math.max(80,Math.round((el.clientHeight||150)*pr));
+  el.appendChild(cv);el.classList.add("has3d");
+  const key=el.dataset.rotkey||"";
+  const st={el,cv,ctx:cv.getContext("2d"),code:el.dataset.av3d,anim:el.dataset.anim||"idle",t0:performance.now()/1000,userRot:key?(A3.rot[key]||0):0,dragAt:key&&A3.rot[key]?performance.now()/1000:-99,key,char:build3D(el.dataset.av3d)};
+  let dragging=false,lx=0;
+  cv.addEventListener("pointerdown",e=>{dragging=true;lx=e.clientX;try{cv.setPointerCapture(e.pointerId)}catch(_){}});
+  cv.addEventListener("pointermove",e=>{if(!dragging)return;st.userRot+=(e.clientX-lx)*0.015;lx=e.clientX;st.dragAt=performance.now()/1000;if(st.key)A3.rot[st.key]=st.userRot});
+  const up=()=>{dragging=false};cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
+  A3.byEl.set(el,st);A3.stages.add(st);
+}
+function scan3D(){
+  if(A3.failed)return;
+  document.querySelectorAll("[data-av3d]").forEach(el=>{
+    if(!A3.ready){init3D();return}
+    const st=A3.byEl.get(el),code=el.dataset.av3d;
+    if(st&&st.code===code&&st.cv.isConnected){
+      const an=el.dataset.anim||"idle";if(st.anim!==an){st.anim=an;st.t0=performance.now()/1000}
+      return;
+    }
+    if(st)disposeStage(st);
+    makeStage(el);
+  });
+}
+function anim3D(st,T){
+  const u=st.char.userData,an=(st.anim||"idle").split(":")[0],t=T-st.t0,PI=Math.PI;
+  const idleTurn=(T-st.dragAt>2.5)?Math.sin(T*0.6)*0.45:0;
+  let y=0.12*Math.sin(T*2.2),ry=st.userRot+idleTurn,bx=0,hx=0,hyR=0,hz=0,lL=0,lR=0;
+  const sw=Math.sin(T*2.2)*0.15;let aLx=sw,aRx=-sw,aLz=-0.08,aRz=0.08;
+  if(an==="wave"){aRz=2.7+0.35*Math.sin(T*9);aRx=0;hz=-0.08*Math.sin(T*3)}
+  else if(an==="jump"){
+    if(t<0.8){const p=t/0.8,s=Math.sin(PI*p);y=2.6*s;aLz=-2.6*s;aRz=2.6*s;lL=-0.5*s;lR=0.5*s;ry=st.userRot+p*PI*2}
+    else if(t<2.2){const w=Math.sin(T*10)*0.35;aLz=-2.5+w;aRz=2.5-w;y=Math.abs(Math.sin(T*6))*0.35}
+  }else if(an==="sad"){
+    const d=Math.max(0,1-t/1.4);hyR=0.55*Math.sin(t*16)*d;hx=0.28;bx=0.08;aLx=0;aRx=0;aLz=-0.02;aRz=0.02;y=0.05*Math.sin(T*1.2);
+  }else if(an==="dance"){
+    ry=st.userRot+0.6*Math.sin(T*2);y=Math.abs(Math.sin(T*4))*0.6;
+    aLz=-(1.4+0.9*Math.sin(T*4));aRz=1.4+0.9*Math.sin(T*4+PI);lL=0.3*Math.sin(T*4);lR=-lL;hz=0.12*Math.sin(T*4);
+  }else if(an==="cheer"){
+    const p=(T%1.3)/0.75;const s=p<1?Math.sin(PI*p):0;y=2.2*s;
+    aLz=-2.6+0.3*Math.sin(T*12);aRz=2.6-0.3*Math.sin(T*12);lL=-0.4*s;lR=0.4*s;ry=st.userRot+0.4*Math.sin(T*1.5);
+  }
+  st.char.position.y=y;st.char.rotation.y=ry;u.body.rotation.x=bx;
+  u.armL.rotation.set(aLx,0,aLz);u.armR.rotation.set(aRx,0,aRz);
+  u.headG.rotation.set(hx,hyR,hz);u.legL.rotation.x=lL;u.legR.rotation.x=lR;
+  return y;
+}
+function loop3D(now){
+  requestAnimationFrame(loop3D);
+  if(!A3.stages.size)return;
+  const T=now/1000,rc=A3.renderer.domElement;
+  for(const st of [...A3.stages]){
+    if(!st.el.isConnected||!st.cv.isConnected){disposeStage(st);continue}
+    if(st.el.offsetParent===null)continue;
+    const b=st.el.getBoundingClientRect();if(b.bottom<0||b.top>innerHeight)continue;
+    const pr=Math.min(window.devicePixelRatio||1,2),ww=Math.round(st.el.clientWidth*pr),hh=Math.round(st.el.clientHeight*pr);
+    if(ww>10&&hh>10&&(Math.abs(ww-st.cv.width)>2||Math.abs(hh-st.cv.height)>2)){st.cv.width=ww;st.cv.height=hh}
+    const y=anim3D(st,T);
+    const k=Math.max(.45,1-y*0.18);A3.shadow.scale.set(k,k,k);
+    A3.scene.add(st.char);A3.renderer.render(A3.scene,A3.camera);A3.scene.remove(st.char);
+    const cw=st.cv.width,ch=st.cv.height,s=Math.min(cw/A3.RW,ch/A3.RH),dw=A3.RW*s,dh=A3.RH*s;
+    st.ctx.clearRect(0,0,cw,ch);st.ctx.drawImage(rc,(cw-dw)/2,ch-dh,dw,dh);
+  }
+}
+let scanQ=0;
+new MutationObserver(()=>{if(!scanQ)scanQ=requestAnimationFrame(()=>{scanQ=0;scan3D()})})
+  .observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:["data-av3d","data-anim"]});
 function mountCreator(el,get,set){
   let tab=0;
   const TABS=[["🧑","Kepala"],["😀","Wajah"],["👕","Baju"],["👖","Celana"]];
@@ -725,7 +892,7 @@ function mountCreator(el,get,set){
   ][tab]};
   const render=pop=>{
     const c=get();
-    el.innerHTML=`<div class="crwrap"><div class="crprev"><div class="crfig${pop?" pop":""}" style="background:${avBg(c)}">${avSVG(c,"full")}</div><button type="button" class="btn ghost small" data-rand="1">🎲 Acak</button></div>
+    el.innerHTML=`<div class="crwrap"><div class="crprev"><div class="crfig${pop?" pop":""}" style="background:${avBg(c)}" data-av3d="${c}" data-anim="${pop?"jump:"+Date.now():"idle"}" data-rotkey="${el.id}">${avSVG(c,"full")}</div><div class="hint rothint">↔ geser untuk memutar</div><button type="button" class="btn ghost small" data-rand="1">🎲 Acak</button></div>
       <div class="crctl"><div class="crtabs">${TABS.map((t,i)=>`<button type="button" class="crtab${i===tab?" on":""}" data-tab="${i}">${t[0]} ${t[1]}</button>`).join("")}</div>${rows()}</div></div>`;
   };
   el.onclick=e=>{
@@ -873,7 +1040,7 @@ function startGame(){
 }
 function showTurn(){
   const p=S.players[S.cur];
-  setAv($("#turnav"),p.av,"full");
+  setAv($("#turnav"),p.av,"full");$("#turnav").dataset.anim="wave";
   $("#turnname").textContent=p.name;
   $("#turnmeta").textContent=`Peserta ${S.cur+1} dari ${S.players.length} · ${S.qs.length} soal · ${S.set.t} detik per soal`;
   $("#readyBtn").style.display="";$("#countdown").textContent="";
@@ -1023,7 +1190,7 @@ function showRank(){
   const r=S.ranked,order=[1,0,2];
   $("#podium").innerHTML=order.map((idx,k)=>{
     const p=r[idx];if(!p)return "";
-    return `<div class="pod p${idx+1}">${idx===0?'<div class="crown">👑</div>':""}<div class="podfig" style="animation-delay:${.6+k*.25}s">${avSVG(p.av,"full")}</div>
+    return `<div class="pod p${idx+1}">${idx===0?'<div class="crown">👑</div>':""}<div class="podfig" style="animation-delay:${.6+k*.25}s" data-av3d="${p.av}" data-anim="${idx===0?"cheer":"dance"}">${avSVG(p.av,"full")}</div>
       <div class="nm">${esc(p.name)}</div><div class="pt">${p.points.toLocaleString("id-ID")} poin</div>
       <div class="bar" style="animation-delay:${k*.2}s">${idx+1}</div></div>`;
   }).join("");
@@ -1594,7 +1761,7 @@ function stRender(m){
   if(m.t==="lobby"){
     cancelAnimationFrame(OL.stRaf);
     Object.assign(OL,{curQi:-1,answeredQi:-1,revealQi:-1,score:0,ok:0,bad:0,endShown:false,lastPun:""});
-    setAv($("#swAv"),OL.myAv,"full");$("#swName").textContent=OL.myName;
+    setAv($("#swAv"),OL.myAv,"full");$("#swAv").dataset.anim="wave";$("#swName").textContent=OL.myName;
     $("#swInfo").textContent=`PIN ${OL.pin} · ${m.players?m.players.length:0} peserta di ruang. Lihat layar guru, kuis segera dimulai…`;
     show("stWait");return;
   }
@@ -1625,7 +1792,8 @@ function stRender(m){
     if(OL.revealQi===m.qi&&$("#stRes").classList.contains("active"))return;
     OL.revealQi=m.qi;OL.curQi=m.qi;OL.answeredQi=m.qi;cancelAnimationFrame(OL.stRaf);
     const r=m.res&&m.res[OL.me],box=$("#srBox"),fig=$("#srFig");
-    setAv(fig,OL.myAv,"full");fig.classList.remove("jump","sad");void fig.offsetWidth;if(r)fig.classList.add(r.ok?"jump":"sad");
+    setAv(fig,OL.myAv,"full");fig.dataset.anim=r?`${r.ok?"jump":"sad"}:${m.qi}`:"idle";
+    if(A3.failed){fig.classList.remove("jump","sad");void fig.offsetWidth;if(r)fig.classList.add(r.ok?"jump":"sad")}
     if(!r){box.className="resbox na";box.innerHTML=`<div class="big">Lewat 🙂</div>Kamu masuk setelah soal ini dimulai.`}
     else{
       OL.score=r.pts;OL.ok=r.b;OL.bad=r.s;
@@ -1644,7 +1812,7 @@ function stRender(m){
     const r=(m.r||[]).find(x=>x.id===OL.me),box=$("#seBox");
     if(!r){box.innerHTML=`<div class="bigmsg">Sesi selesai 🏁</div><div class="hint">Kamu tidak tercatat di ronde ini.</div>`;show("stEnd");return}
     const medal=r.rk<=3?["🥇","🥈","🥉"][r.rk-1]:"#"+r.rk;
-    box.innerHTML=`<div class="bigav" style="background:${avBg(OL.myAv)}">${avSVG(OL.myAv,"full")}</div>
+    box.innerHTML=`<div class="bigav" style="background:${avBg(OL.myAv)}" data-av3d="${OL.myAv}" data-anim="${r.rk===1?"cheer":(r.ok||r.rk<=3?"dance":"sad:end")}">${avSVG(OL.myAv,"full")}</div>
       <div class="turnname">${esc(OL.myName)}</div>
       <div class="bigmsg">${medal} <span style="font-size:20px">dari ${m.total} peserta</span></div>
       <div class="card" style="width:100%">
@@ -1688,7 +1856,7 @@ window.addEventListener("beforeunload",e=>{
 
 /* ---------- init ---------- */
 S.selAv=avRandom();
-renderPlayers();renderSettings();renderSource();
+renderPlayers();renderSettings();renderSource();scan3D();
 const qpin=new URLSearchParams(location.search).get("pin");
 if(qpin)stOpenJoin(qpin);
 else if(SRC.type==="link"&&SRC.link)loadFromLink(SRC.link,true);
