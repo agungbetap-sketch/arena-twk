@@ -294,6 +294,7 @@ canvas.av3d:active{cursor:grabbing}
 .podfig{width:110px;height:150px}
 .joinbig{font-size:clamp(17px,3vw,24px);font-weight:700;color:#5b21b6;word-break:break-all;background:#f5f3ff;border:2px dashed #c4b5fd;border-radius:12px;padding:8px 10px;margin:4px 0 8px}
 .joinonly #stBack{display:none}
+html.joinonly,html.joinonly body{overscroll-behavior-y:contain}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:10}
 </style>
 </head>
@@ -1687,7 +1688,9 @@ function hostMsg(m){
       if(taken(name)){let k=2;while(taken(name+" "+k))k++;name=name+" "+k}
       p=newOnlinePlayer(m.id,name,avNorm(m.av));OL.players.set(m.id,p);SFX.click();
     }
-    olPub({t:"ack",id:m.id,name:p.name},false);
+    const ack={t:"ack",id:m.id,name:p.name,pts:p.points,b:p.benar,s:p.salah+p.kosong,st:p.streak};
+    if(OL.phase==="q"){const a=OL.answers.get(m.id);ack.qi=OL.qi;ack.ans=a?a.i:null;ack.remain=Math.max(0,Math.round(S.set.t*1000-(performance.now()-(OL.qT0||0))))}
+    olPub(ack,false);
     if(OL.phase==="lobby")hostLobbyPub();else updAns();
   }else if(m.t==="ans"){
     if(OL.phase!=="q"||m.qi!==OL.qi||!OL.players.has(m.id)||OL.answers.has(m.id))return;
@@ -1699,7 +1702,7 @@ function hostMsg(m){
 }
 function updAns(){$("#hAns").textContent=`📥 ${OL.answers.size}/${OL.players.size} menjawab`}
 function hostQuestion(){
-  const q=OL.qs[OL.qi];OL.phase="q";OL.answers=new Map();
+  const q=OL.qs[OL.qi];OL.phase="q";OL.answers=new Map();OL.qT0=performance.now();
   OL.last={t:"q",qi:OL.qi,n:OL.qs.length,q:q.q,topik:q.topik,opsi:q.opsi,dur:S.set.t};olPub(OL.last,true);
   show("olQ");
   $("#hProg").style.width=(OL.qi/OL.qs.length*100)+"%";$("#hProgTxt").textContent=`Soal ${OL.qi+1} / ${OL.qs.length}`;
@@ -1796,38 +1799,73 @@ function stOpenJoin(pin){
   setTimeout(()=>($("#stPin").value?$("#stName"):$("#stPin")).focus(),100);
 }
 function stErr(msg){$("#stErr").innerHTML=`<div class="err">✖ ${esc(msg)}</div>`;const b=$("#stJoinBtn");b.disabled=false;b.textContent="Gabung ▶"}
+const SESS_TTL=3*3600*1000;
+function newPlayerId(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4)}
+function saveSess(){if(OL.role==="player"&&OL.joined)store.set("sess",{pin:OL.pin,id:OL.me,name:OL.myName,av:OL.myAv,ts:Date.now()})}
+function clearSess(){store.set("sess",null)}
+function getSess(){const s=store.get("sess",null);return s&&s.pin&&s.id&&Date.now()-(s.ts||0)<SESS_TTL?s:null}
+async function stConnect(pin,name,av,id,onFail,onProgress){
+  olClose();
+  let c=null;
+  for(let a=0;a<3&&!c;a++){
+    if(onProgress)onProgress(a);
+    try{c=await connectBroker(+pin[0]-1,10000)}catch(e){}
+  }
+  if(!c)return onFail("Tidak bisa terhubung ke server. Cek internet lalu coba lagi.");
+  try{sessionStorage.setItem("arenatwk_id_"+pin,id)}catch(e){}
+  Object.assign(OL,{role:"player",client:c,pin,base:"arenatwk/v1/"+pin,me:id,myName:name,myAv:av,joined:false,last:null,
+    curQi:-1,answeredQi:-1,revealQi:-1,score:0,ok:0,bad:0,endShown:false,lastPun:"",myAns:null,remain:null,onFail});
+  c.on("message",(t,buf)=>{if(OL.client!==c)return;let m;try{m=JSON.parse(buf.toString())}catch(e){return}stMsg(m)});
+  netWatch(c);
+  c.on("connect",()=>{if(OL.client===c)stSendJoin()});
+  c.subscribe(OL.base+"/h",{qos:1},()=>stSendJoin());
+  OL.joinTimer=setTimeout(()=>{if(!OL.joined&&OL.client===c){olClose();onFail("Ruang dengan PIN ini tidak ditemukan atau belum dibuka guru. Cek PIN lalu coba lagi.")}},9000);
+}
 async function stJoin(){
   const pin=$("#stPin").value.replace(/\D/g,""),name=$("#stName").value.trim();
   if(!/^\d{6}$/.test(pin)||!(+pin[0]>=1&&+pin[0]<=BROKERS.length))return stErr("PIN harus 6 angka sesuai layar guru.");
   if(!name)return stErr("Isi nama dulu.");
   store.set("me",{name,av:OL.stAv});
   const b=$("#stJoinBtn");b.disabled=true;b.textContent="Menghubungkan…";$("#stErr").innerHTML="";
-  olClose();
-  let c=null;
-  for(let a=0;a<3&&!c;a++){
-    if(a)b.textContent=`Mencoba lagi (${a+1}/3)…`;
-    try{c=await connectBroker(+pin[0]-1,10000)}catch(e){}
-  }
-  if(!c)return stErr("Tidak bisa terhubung ke server. Cek internet lalu coba lagi.");
   let id=null;try{id=sessionStorage.getItem("arenatwk_id_"+pin)}catch(e){}
-  if(!id){id=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);try{sessionStorage.setItem("arenatwk_id_"+pin,id)}catch(e){}}
-  Object.assign(OL,{role:"player",client:c,pin,base:"arenatwk/v1/"+pin,me:id,myName:name,myAv:OL.stAv,joined:false,last:null,curQi:-1,answeredQi:-1,revealQi:-1,score:0,ok:0,bad:0,endShown:false,lastPun:""});
-  c.on("message",(t,buf)=>{if(OL.client!==c)return;let m;try{m=JSON.parse(buf.toString())}catch(e){return}stMsg(m)});
-  netWatch(c);
-  c.on("connect",()=>{if(OL.client===c)stSendJoin()});
-  c.subscribe(OL.base+"/h",{qos:1},()=>stSendJoin());
-  OL.joinTimer=setTimeout(()=>{if(!OL.joined&&OL.client===c){olClose();stErr("Ruang dengan PIN ini tidak ditemukan atau belum dibuka guru. Cek PIN lalu coba lagi.")}},9000);
+  const sv=getSess();
+  if(!id&&sv&&sv.pin===pin&&String(sv.name).toLowerCase()===name.toLowerCase())id=sv.id;
+  if(!id)id=newPlayerId();
+  stConnect(pin,name,OL.stAv,id,stErr,a=>{if(a)b.textContent=`Mencoba lagi (${a+1}/3)…`});
+}
+function stResume(sv){
+  $("#smTitle").textContent="Menyambung kembali… 🔄";
+  $("#smText").textContent=`PIN ${sv.pin} · ${sv.name}. Skor dan jawabanmu tetap tersimpan.`;
+  $("#smBack").textContent="Gabung sebagai orang lain";
+  $("#smBack").onclick=()=>{olClose();clearSess();$("#smBack").textContent="↻ Gabung lagi";$("#smBack").onclick=()=>stOpenJoin("");stOpenJoin("")};
+  show("stMsg");
+  OL.stAv=avNorm(sv.av);
+  stConnect(sv.pin,sv.name,OL.stAv,sv.id,msg=>{
+    $("#smBack").textContent="↻ Gabung lagi";$("#smBack").onclick=()=>stOpenJoin("");
+    stOpenJoin(sv.pin);$("#stName").value=sv.name;stErr(msg);
+  },a=>{if(a)$("#smText").textContent=`PIN ${sv.pin} · ${sv.name}. Mencoba lagi (${a+1}/3)…`});
 }
 function stSendJoin(){if(OL.role==="player")olPub({t:"join",id:OL.me,name:OL.myName,av:OL.myAv},false)}
 function stMsg(m){
   if(m.t==="ack"){
     if(m.id!==OL.me)return;
     const first=!OL.joined;OL.joined=true;OL.myName=m.name||OL.myName;clearTimeout(OL.joinTimer);
-    if(first){const b=$("#stJoinBtn");b.disabled=false;b.textContent="Gabung ▶";SFX.go();stRender(OL.last||{t:"lobby",players:[]})}
+    if(typeof m.pts==="number"){OL.score=m.pts;OL.ok=m.b|0;OL.bad=m.s|0}
+    if(m.qi!=null){
+      if(m.ans!=null){OL.answeredQi=m.qi;OL.myAns=m.ans}
+      else if(typeof m.remain==="number")OL.remain={qi:m.qi,ms:m.remain};
+    }
+    saveSess();
+    if(first){
+      const b=$("#stJoinBtn");b.disabled=false;b.textContent="Gabung ▶";SFX.go();
+      $("#smBack").textContent="↻ Gabung lagi";$("#smBack").onclick=()=>stOpenJoin("");
+      stRender(OL.last||{t:"lobby",players:[]});
+    }else if(m.ans!=null&&OL.curQi===m.qi&&$("#stQ").classList.contains("active"))stSent(m.ans);
     return;
   }
   if(m.t==="closed"){
-    if(!OL.joined){olClose();return stErr("Sesi dengan PIN ini sudah ditutup guru.")}
+    clearSess();
+    if(!OL.joined){olClose();return (OL.onFail||stErr)("Sesi dengan PIN ini sudah ditutup guru.")}
     if(OL.last&&OL.last.t==="end"){olClose();return}
     olClose();stShowMsg("Sesi ditutup 👋","Guru menutup ruang. Terima kasih sudah ikut!");return;
   }
@@ -1849,14 +1887,17 @@ function stRender(m){
   if(m.t==="q"){
     if(m.qi===OL.curQi&&($("#stQ").classList.contains("active")||$("#stSent").classList.contains("active")))return;
     OL.curQi=m.qi;
-    if(OL.answeredQi===m.qi){stSent(null);return}
+    if(OL.answeredQi===m.qi){stSent(OL.myAns!=null&&OL.myAns>=0?OL.myAns:(OL.myAns===-1?-1:null));return}
+    OL.myAns=null;
     stHud();
     $("#sqProg").style.width=(m.qi/m.n*100)+"%";$("#sqProgTxt").textContent=`Soal ${m.qi+1} / ${m.n}`;
     $("#sqTopic").textContent=m.topik;$("#sqText").textContent=m.q;
     const c=$("#sqCard");c.classList.remove("enter");void c.offsetWidth;c.classList.add("enter");
     $("#sqOpts").innerHTML=m.opsi.map((o,i)=>`<button class="opt" data-i="${i}" style="background:${OPT_COL[i]};animation-delay:${.1+i*.06}s"><span class="sh"><span>${OPT_SH[i]}</span></span><span>${esc(o)}</span></button>`).join("");
     show("stQ");SFX.go();
-    OL.qStart=performance.now();const T=m.dur*1000,bar=$("#sqBar"),num=$("#sqNum");let last=null;
+    const T=m.dur*1000,bar=$("#sqBar"),num=$("#sqNum");let last=null;
+    OL.qStart=performance.now();
+    if(OL.remain&&OL.remain.qi===m.qi){OL.qStart-=Math.max(0,T-OL.remain.ms);OL.remain=null}
     cancelAnimationFrame(OL.stRaf);
     const loop=now=>{
       if(OL.answeredQi===m.qi||OL.curQi!==m.qi)return;
@@ -1920,7 +1961,7 @@ function stSent(i){
 function stAnswer(i){
   if(OL.role!=="player"||OL.answeredQi===OL.curQi||!OL.last||OL.last.t!=="q")return;
   const T=OL.last.dur*1000,ms=Math.min(performance.now()-OL.qStart,T);
-  OL.answeredQi=OL.curQi;
+  OL.answeredQi=OL.curQi;OL.myAns=i;
   olPub({t:"ans",id:OL.me,qi:OL.curQi,i,ms:Math.round(ms)},false);
   SFX.click();stSent(i);
 }
@@ -1928,7 +1969,7 @@ $("#sqOpts").addEventListener("click",e=>{const b=e.target.closest(".opt");if(b)
 $("#stJoinBtn").onclick=stJoin;
 ["#stPin","#stName"].forEach(s=>$(s).addEventListener("keydown",e=>{if(e.key==="Enter")stJoin()}));
 $("#olJoinBtn").onclick=()=>stOpenJoin("");
-$("#stBack").onclick=()=>{olClose();show("home")};
+$("#stBack").onclick=()=>{olClose();clearSess();show("home")};
 $("#smBack").onclick=()=>{show("home")};
 window.addEventListener("beforeunload",e=>{
   const busy=(OL.role==="host"&&OL.phase&&OL.phase!=="end")||(OL.role==="player"&&OL.joined&&OL.last&&OL.last.t!=="end");
@@ -1942,8 +1983,10 @@ const qp=new URLSearchParams(location.search),qpin=qp.get("pin");
 const JOINONLY=qp.has("join")||!!qpin;
 if(JOINONLY){
   document.body.classList.add("joinonly");document.title="Gabung Arena TWK";
+  document.documentElement.classList.add("joinonly");
   $("#smBack").textContent="↻ Gabung lagi";$("#smBack").onclick=()=>stOpenJoin("");
-  stOpenJoin(qpin||"");
+  const sv=getSess();
+  if(sv&&(!qpin||qpin===sv.pin))stResume(sv);else stOpenJoin(qpin||"");
 }
 else if(SRC.type==="link"&&SRC.link)loadFromLink(SRC.link,true);
 })();
