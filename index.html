@@ -253,6 +253,37 @@ div.opt{cursor:default}
 .netbar{position:fixed;top:0;left:0;right:0;z-index:20;background:#b45309;color:#fff;text-align:center;padding:6px;font-size:14px;transform:translateY(-100%);transition:transform .3s}
 .netbar.show{transform:none}
 .err{color:var(--bad);font-weight:600}
+/* blocky characters */
+.miniav{overflow:hidden}
+.miniav svg,.bigav svg,.crfig svg,.podfig svg,.opt-ic svg{width:100%;height:100%;display:block}
+.bigav{width:150px;height:190px;border-radius:28px;font-size:0;padding:8px 10px 4px;box-shadow:0 0 0 6px rgba(255,255,255,.25),0 10px 0 rgba(0,0,0,.2)}
+.bigav.small{width:96px;height:122px;border-radius:20px;padding:6px 6px 2px;animation:none}
+.podfig{width:96px;height:132px;animation:pop .5s backwards}
+.podfig svg{filter:drop-shadow(0 4px 0 rgba(0,0,0,.25))}
+.jump{animation:jump .7s cubic-bezier(.3,1.6,.5,1)!important}
+@keyframes jump{30%{transform:translateY(-18px) scale(1.08) rotate(-4deg)}60%{transform:translateY(0) scale(.96)}}
+.sad{animation:sadShake .5s!important;filter:saturate(.6)}
+@keyframes sadShake{20%{transform:rotate(-8deg)}40%{transform:rotate(7deg)}60%{transform:rotate(-5deg)}80%{transform:rotate(3deg)}}
+.creator{margin:8px 0 12px}
+.crwrap{display:flex;gap:14px;align-items:flex-start}
+@media (max-width:520px){.crwrap{flex-direction:column;align-items:center}}
+.crprev{display:flex;flex-direction:column;align-items:center;gap:8px;flex:none}
+.crfig{width:118px;height:150px;border-radius:20px;padding:6px 8px 2px;box-shadow:inset 0 -6px 0 rgba(0,0,0,.08)}
+.crfig svg{animation:idle 2.4s ease-in-out infinite}
+.crfig.pop{animation:pop .35s}
+@keyframes idle{50%{transform:translateY(-4px)}}
+.crctl{flex:1;min-width:0;width:100%}
+.crtabs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.crtab{font:inherit;font-size:13px;font-weight:600;border:0;border-radius:10px;padding:6px 10px;background:#f3efff;color:#5b21b6;cursor:pointer}
+.crtab.on{background:#7c3aed;color:#fff}
+.crrow{margin:6px 0}
+.crrow>span{display:block;font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+.swrow{display:flex;flex-wrap:wrap;gap:6px}
+.swatch{width:28px;height:28px;border-radius:8px;border:3px solid #fff;box-shadow:0 0 0 1px #d4cde8;cursor:pointer;padding:0}
+.swatch.sel{box-shadow:0 0 0 3px var(--ink);transform:scale(1.08)}
+.opt-ic{width:44px;height:44px;border-radius:10px;border:2px solid #e5e0f5;padding:2px;cursor:pointer;transition:transform .12s}
+.opt-ic:hover{transform:scale(1.08)}
+.opt-ic.sel{border-color:#7c3aed;box-shadow:0 0 0 2px #7c3aed}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:10}
 </style>
 </head>
@@ -269,8 +300,8 @@ div.opt{cursor:default}
     <div class="card">
       <h2>1 · Daftar Peserta</h2>
       <input type="text" id="pname" maxlength="16" placeholder="Ketik nama peserta, lalu Enter">
-      <div class="hint" style="margin-top:10px">Pilih karakter:</div>
-      <div id="avgrid" class="avgrid"></div>
+      <div class="hint" style="margin-top:10px">Buat karakter:</div>
+      <div id="creator" class="creator"></div>
       <button id="addp" class="btn">+ Tambah Peserta</button>
       <div id="plist" class="plist"></div>
     </div>
@@ -497,8 +528,8 @@ Pembahasan: Rumusan resmi ada di Pembukaan UUD 1945 alinea keempat.</pre>
   <div class="card st">
     <label>PIN dari layar guru <input type="text" id="stPin" inputmode="numeric" maxlength="6" placeholder="6 angka" class="pininput" autocomplete="off"></label>
     <label>Nama <input type="text" id="stName" maxlength="16" placeholder="Nama kamu" autocomplete="off"></label>
-    <div class="hint">Pilih karakter:</div>
-    <div id="stAvgrid" class="avgrid"></div>
+    <div class="hint">Buat karakter kamu:</div>
+    <div id="stCreator" class="creator"></div>
     <button id="stJoinBtn" class="btn big go" style="width:100%">Gabung ▶</button>
     <div id="stErr" class="srcmsg"></div>
   </div>
@@ -530,6 +561,7 @@ Pembahasan: Rumusan resmi ada di Pembukaan UUD 1945 alinea keempat.</pre>
   <div class="loader"><span></span><span></span><span></span></div>
 </section>
 <section id="stRes" class="screen center st">
+  <div id="srFig" class="bigav small"></div>
   <div id="srBox" class="resbox"></div>
   <div class="card" style="width:100%;text-align:left"><div id="srAns"></div><div id="srBahas" class="bahas"></div></div>
   <div class="hint">Soal berikutnya muncul otomatis.</div>
@@ -607,7 +639,104 @@ const FALLBACK=[
 const BUILTIN=(Array.isArray(window.BANK_SOAL)&&window.BANK_SOAL.length)?window.BANK_SOAL:FALLBACK;
 let BANK=BUILTIN,TOPICS=[];
 function calcTopics(){TOPICS=[...new Set(BANK.map(q=>q.topik))]}
-const AVATARS=[["🦁","#fbbf24"],["🐯","#fb923c"],["🦊","#f97316"],["🐼","#94a3b8"],["🐸","#4ade80"],["🐵","#d6a46b"],["🦉","#a78bfa"],["🐧","#38bdf8"],["🐨","#a8a29e"],["🦄","#f9a8d4"],["🐙","#fb7185"],["🐲","#34d399"],["🦅","#f59e0b"],["🐢","#86efac"],["🐬","#7dd3fc"],["🐝","#fde047"]];
+/* ---------- blocky character (original design, SVG) ---------- */
+const SKIN=["#ffdbb8","#f1c08f","#d9a066","#b07a4f","#7d5235","#5a3a24","#a5e3a0","#a9d6ff"];
+const SHIRT=["#ef4444","#f97316","#facc15","#22c55e","#14b8a6","#3b82f6","#6366f1","#a855f7","#ec4899","#f8fafc","#1f2937"];
+const PANTS=["#1e3a8a","#111827","#6b7280","#78350f","#065f46","#7f1d1d","#4c1d95","#e5e7eb"];
+const HAIRC=["#1f1410","#5b3a1e","#a0522d","#e8c170","#d1d5db","#ef4444","#3b82f6","#ec4899","#f8fafc","#14b8a6"];
+const PATTERN=["Polos","Garis","Bintang","Kerah & dasi","Hoodie"];
+const FACES=["Senyum","Tertawa","Kacamata hitam","Kedip","Kaget","Serius","Malu-malu"];
+const HATS=["Botak","Rambut pendek","Rambut jabrik","Rambut panjang","Kerudung","Peci","Topi","Kupluk","Ikat kepala","Mahkota"];
+const AVK=["s","b","m","c","w","t","r"];
+const AVN=()=>[SKIN.length,SHIRT.length,PATTERN.length,PANTS.length,FACES.length,HATS.length,HAIRC.length];
+function avCode(o){return AVK.map(k=>(o[k]|0).toString(36)).join("")}
+function avPreset(n){return avCode({s:n%6,b:(n*3)%SHIRT.length,m:n%5,c:(n*5)%PANTS.length,w:n%FACES.length,t:(n%9)+1,r:n%5})}
+function avParse(code){
+  if(typeof code==="number"||/^\d{1,2}$/.test(String(code)))code=avPreset(+code);
+  const s=String(code||""),n=AVN(),o={};
+  AVK.forEach((k,i)=>{const v=parseInt(s[i]||"0",36);o[k]=isNaN(v)?0:((v%n[i])+n[i])%n[i]});
+  return o;
+}
+function avNorm(c){return avCode(avParse(c))}
+function avRandom(){const n=AVN(),o={};AVK.forEach((k,i)=>o[k]=Math.floor(Math.random()*n[i]));o.s=Math.floor(Math.random()*6);return avCode(o)}
+function mix(hex,to,t){const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));const a=p(hex),b=p(to);return "#"+a.map((v,i)=>Math.round(v+(b[i]-v)*t).toString(16).padStart(2,"0")).join("")}
+function avBg(code){return mix(SHIRT[avParse(code).b],"#ffffff",.55)}
+const rr=(x,y,w,h,r)=>`M${x+r} ${y}H${x+w-r}Q${x+w} ${y} ${x+w} ${y+r}V${y+h-r}Q${x+w} ${y+h} ${x+w-r} ${y+h}H${x+r}Q${x} ${y+h} ${x} ${y+h-r}V${y+r}Q${x} ${y} ${x+r} ${y}Z`;
+function avSVG(code,mode){
+  mode=mode||"bust";
+  const a=avParse(code),sk=SKIN[a.s],sh=SHIRT[a.b],pa=PANTS[a.c],hc=HAIRC[a.r];
+  const S='stroke="rgba(0,0,0,.25)" stroke-width="1.2"',E="#2b1d14";
+  const shD=mix(sh,"#000000",.22),paD=mix(pa,"#000000",.35),hcD=mix(hc,"#000000",.3);
+  const vb=mode==="full"?"4 -8 92 136":mode==="head"?"25 -7 50 50":"14 -7 72 72";
+  const line=d=>`<path d="${d}" stroke="${E}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+  let g="";
+  if(mode==="full"){
+    g+=`<rect x="28" y="80" width="21" height="42" rx="3" fill="${pa}" ${S}/><rect x="51" y="80" width="21" height="42" rx="3" fill="${pa}" ${S}/>`;
+    g+=`<rect x="28" y="115" width="21" height="8" rx="3" fill="${paD}"/><rect x="51" y="115" width="21" height="8" rx="3" fill="${paD}"/>`;
+  }
+  const sl=a.m===4?30:20;
+  g+=`<rect x="12" y="40" width="14" height="38" rx="4" fill="${sk}" ${S}/><rect x="74" y="40" width="14" height="38" rx="4" fill="${sk}" ${S}/>`;
+  g+=`<rect x="12" y="40" width="14" height="${sl}" rx="4" fill="${sh}" ${S}/><rect x="74" y="40" width="14" height="${sl}" rx="4" fill="${sh}" ${S}/>`;
+  g+=`<rect x="27" y="40" width="46" height="41" rx="4" fill="${sh}" ${S}/>`;
+  if(a.m===1)[48,57,66,75].forEach(y=>{g+=`<rect x="27.6" y="${y}" width="44.8" height="4" fill="#fff" opacity=".45"/>`});
+  if(a.m===2){let pts=[];for(let i=0;i<10;i++){const r=i%2?4.2:10,an=-Math.PI/2+i*Math.PI/5;pts.push((50+r*Math.cos(an)).toFixed(1)+","+(60+r*Math.sin(an)).toFixed(1))}g+=`<polygon points="${pts.join(" ")}" fill="${a.b===2?"#fff":"#fde047"}" ${S}/>`}
+  if(a.m===3){const tie=a.b===0?"#1e3a8a":"#b91c1c";g+=`<path d="M50 49 L46 54 L49 73 L51 73 L54 54 Z" fill="${tie}" ${S}/><path d="M37 40 L50 50 L63 40 Z" fill="#fff" ${S}/>`}
+  if(a.m===4)g+=`<rect x="37" y="62" width="26" height="13" rx="3" fill="${shD}"/><path d="M45 42 V53 M55 42 V53" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="${rr(30,27,40,16,8)}" fill="${shD}" ${S}/>`;
+  if(a.t===3)g+=`<path d="${rr(29,1,42,48,9)}" fill="${hc}" ${S}/>`;
+  g+=`<path d="${rr(33,5,34,33,8)}" fill="${sk}" ${S}/>`;
+  if(a.t===4)g+=`<path fill-rule="evenodd" fill="${hc}" ${S} d="${rr(26,0,48,54,16)} ${rr(37,10,26,26,10)}"/>`;
+  const eyes=(ry)=>`<ellipse cx="43" cy="20" rx="2.6" ry="${ry||3.2}" fill="${E}"/><ellipse cx="57" cy="20" rx="2.6" ry="${ry||3.2}" fill="${E}"/>`;
+  const happy=line("M40 21 Q43 16.5 46 21 M54 21 Q57 16.5 60 21"),smile=line("M43 27.5 Q50 33 57 27.5");
+  g+=[
+    eyes()+smile,
+    happy+`<path d="M42 26 Q50 37 58 26 Z" fill="${E}"/><path d="M46 31.6 Q50 34.6 54 31.6 Z" fill="#e45b6b"/>`,
+    `<rect x="37.5" y="16" width="11" height="7" rx="2.5" fill="#111"/><rect x="51.5" y="16" width="11" height="7" rx="2.5" fill="#111"/><path d="M48.5 18.5 H51.5" stroke="#111" stroke-width="1.6"/><path d="M39.5 17.6 H43" stroke="#fff" stroke-width="1" opacity=".7"/>`+line("M45 29 Q51 31.5 56 27"),
+    `<ellipse cx="43" cy="20" rx="2.6" ry="3.2" fill="${E}"/>`+line("M54 20.5 Q57 18 60 20.5")+smile,
+    eyes(4)+`<ellipse cx="50" cy="29.5" rx="3" ry="3.6" fill="${E}"/>`,
+    line("M39 15.5 L46 17.5 M61 15.5 L54 17.5")+eyes(2.6)+line("M45 29 H55"),
+    happy+smile+`<circle cx="39.5" cy="25" r="2.6" fill="#f472b6" opacity=".55"/><circle cx="60.5" cy="25" r="2.6" fill="#f472b6" opacity=".55"/>`
+  ][a.w];
+  const shortHair=`<path d="${rr(31,2,38,11,6)}" fill="${hc}" ${S}/><rect x="31" y="8" width="4" height="11" rx="2" fill="${hc}"/><rect x="65" y="8" width="4" height="11" rx="2" fill="${hc}"/>`;
+  g+=[
+    "",
+    shortHair,
+    `<path d="M31 15 L32 3 L38 8 L42 -1 L48 6 L53 -2 L57 6 L62 0 L64 8 L69 4 L69 15 Q50 9 31 15 Z" fill="${hc}" ${S}/>`,
+    `<path d="${rr(31,2,38,10,6)}" fill="${hc}" ${S}/><rect x="30" y="6" width="5" height="30" rx="2.5" fill="${hc}" ${S}/><rect x="65" y="6" width="5" height="30" rx="2.5" fill="${hc}" ${S}/>`,
+    "",
+    `<path d="M35 11 L36 0 Q50 -3 64 0 L65 11 Z" fill="#161616" ${S}/><path d="M36 3.5 Q50 0.5 64 3.5" stroke="#3a3a3a" stroke-width="1.2" fill="none"/>`,
+    `<path d="M32 12 Q32 -1 50 -1 Q68 -1 68 12 Z" fill="${hc}" ${S}/><path d="M50 12 H76 Q78 12 76 15 H50 Z" fill="${hcD}" ${S}/><circle cx="50" cy="0" r="1.6" fill="${hcD}"/>`,
+    `<path d="M31 13 Q31 -2 50 -2 Q69 -2 69 13 Z" fill="${hc}" ${S}/><rect x="30" y="9" width="40" height="6" rx="3" fill="${hcD}" ${S}/><circle cx="50" cy="-3" r="4" fill="#fff" ${S}/>`,
+    shortHair+`<rect x="32" y="9" width="36" height="4.5" rx="2" fill="${a.r===5?"#3b82f6":"#ef4444"}" ${S}/><path d="M67 11 L74 8 L73 15 Z" fill="${a.r===5?"#3b82f6":"#ef4444"}"/>`,
+    `<path d="M35 11 L35 -1 L42 5 L50 -5 L58 5 L65 -1 L65 11 Z" fill="#fbbf24" ${S}/><circle cx="50" cy="5" r="2" fill="#ef4444"/><circle cx="42" cy="8" r="1.4" fill="#3b82f6"/><circle cx="58" cy="8" r="1.4" fill="#22c55e"/>`
+  ][a.t];
+  return `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${g}</svg>`;
+}
+function setAv(el,code,mode){el.style.background=avBg(code);el.innerHTML=avSVG(code,mode)}
+function mountCreator(el,get,set){
+  let tab=0;
+  const TABS=[["🧑","Kepala"],["😀","Wajah"],["👕","Baju"],["👖","Celana"]];
+  const sw=(k,arr)=>{const cur=avParse(get())[k];return `<div class="swrow">${arr.map((c,i)=>`<button type="button" class="swatch${cur===i?" sel":""}" data-k="${k}" data-v="${i}" style="background:${c}" aria-label="Warna ${i+1}"></button>`).join("")}</div>`};
+  const ic=(k,names)=>{const base=avParse(get());return `<div class="swrow">${names.map((nm,i)=>{const o=Object.assign({},base,{[k]:i});return `<button type="button" class="opt-ic${base[k]===i?" sel":""}" data-k="${k}" data-v="${i}" title="${nm}" style="background:${mix(SHIRT[base.b],"#ffffff",.75)}">${avSVG(avCode(o),"head")}</button>`}).join("")}</div>`};
+  const rows=()=>{const a=avParse(get());return [
+    `<div class="crrow"><span>Warna kulit</span>${sw("s",SKIN)}</div><div class="crrow"><span>Rambut / penutup kepala: <b>${HATS[a.t]}</b></span>${ic("t",HATS)}</div><div class="crrow"><span>Warna rambut / kerudung / topi</span>${sw("r",HAIRC)}</div>`,
+    `<div class="crrow"><span>Ekspresi: <b>${FACES[a.w]}</b></span>${ic("w",FACES)}</div>`,
+    `<div class="crrow"><span>Warna baju</span>${sw("b",SHIRT)}</div><div class="crrow"><span>Motif</span><div class="swrow">${PATTERN.map((p,i)=>`<button type="button" class="tchip${a.m===i?" on":""}" data-k="m" data-v="${i}">${p}</button>`).join("")}</div></div>`,
+    `<div class="crrow"><span>Warna celana</span>${sw("c",PANTS)}</div>`
+  ][tab]};
+  const render=pop=>{
+    const c=get();
+    el.innerHTML=`<div class="crwrap"><div class="crprev"><div class="crfig${pop?" pop":""}" style="background:${avBg(c)}">${avSVG(c,"full")}</div><button type="button" class="btn ghost small" data-rand="1">🎲 Acak</button></div>
+      <div class="crctl"><div class="crtabs">${TABS.map((t,i)=>`<button type="button" class="crtab${i===tab?" on":""}" data-tab="${i}">${t[0]} ${t[1]}</button>`).join("")}</div>${rows()}</div></div>`;
+  };
+  el.onclick=e=>{
+    const b=e.target.closest("button");if(!b||!el.contains(b))return;e.preventDefault();
+    if(b.dataset.tab!=null){tab=+b.dataset.tab;render();return}
+    if(b.dataset.rand){set(avRandom());SFX.click();render(true);return}
+    if(b.dataset.k){const a=avParse(get());a[b.dataset.k]=+b.dataset.v;set(avCode(a));SFX.click();render(true)}
+  };
+  render();
+  return render;
+}
 const OPT_COL=["var(--o0)","var(--o1)","var(--o2)","var(--o3)","var(--o4)"];
 const OPT_SH=["A","B","C","D","E"];
 const DEF_PUN=[
@@ -634,10 +763,10 @@ calcTopics();
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-const avHTML=(i,cls="miniav")=>`<span class="${cls}" style="background:${AVATARS[i][1]}">${AVATARS[i][0]}</span>`;
+const avHTML=(i,cls="miniav")=>`<span class="${cls}" style="background:${avBg(i)}">${avSVG(i,"bust")}</span>`;
 
 const S={
-  players:store.get("players",[]).filter(p=>p&&p.name&&AVATARS[p.av]),
+  players:store.get("players",[]).filter(p=>p&&p.name).map(p=>({name:p.name,av:avNorm(p.av)})),
   set:Object.assign({n:15,t:20,pg:65,sound:true,bahas:true,topics:TOPICS},store.get("settings",{})),
   qs:[],cur:0,qi:0,answered:true,raf:0,tStart:0,selAv:0,ranked:[],punSel:null,wheelRot:0,spinning:false
 };
@@ -682,9 +811,9 @@ function show(id){
   document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
   $("#"+id).classList.add("active");window.scrollTo(0,0);
 }
+let renderCreator=null;
 function renderAvatars(){
-  const used=new Set(S.players.map(p=>p.av));
-  $("#avgrid").innerHTML=AVATARS.map((a,i)=>`<button class="av${i===S.selAv?" sel":""}" data-i="${i}" style="background:${a[1]};${used.has(i)&&i!==S.selAv?"opacity:.45":""}" title="Karakter ${i+1}">${a[0]}</button>`).join("");
+  if(!renderCreator)renderCreator=mountCreator($("#creator"),()=>S.selAv,v=>{S.selAv=v});else renderCreator();
 }
 function renderPlayers(){
   $("#plist").innerHTML=S.players.length?S.players.map((p,i)=>`<span class="pchip">${avHTML(p.av)}<b>${esc(p.name)}</b><button data-rm="${i}" title="Hapus">✕</button></span>`).join(""):`<span class="hint">Belum ada peserta.</span>`;
@@ -716,11 +845,9 @@ function addPlayer(){
   if(S.players.some(p=>p.name.toLowerCase()===name.toLowerCase())){alert("Nama sudah dipakai.");return}
   S.players.push({name,av:S.selAv});SFX.go();
   inp.value="";
-  const used=new Set(S.players.map(p=>p.av));
-  const free=AVATARS.findIndex((_,i)=>!used.has(i));if(free>=0)S.selAv=free;
+  S.selAv=avRandom();
   renderPlayers();inp.focus();
 }
-$("#avgrid").addEventListener("click",e=>{const b=e.target.closest(".av");if(!b)return;S.selAv=+b.dataset.i;SFX.click();renderAvatars()});
 $("#addp").onclick=addPlayer;
 $("#pname").addEventListener("keydown",e=>{if(e.key==="Enter")addPlayer()});
 $("#plist").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(!b)return;S.players.splice(+b.dataset.rm,1);renderPlayers()});
@@ -746,7 +873,7 @@ function startGame(){
 }
 function showTurn(){
   const p=S.players[S.cur];
-  const t=$("#turnav");t.style.background=AVATARS[p.av][1];t.textContent=AVATARS[p.av][0];
+  setAv($("#turnav"),p.av,"full");
   $("#turnname").textContent=p.name;
   $("#turnmeta").textContent=`Peserta ${S.cur+1} dari ${S.players.length} · ${S.qs.length} soal · ${S.set.t} detik per soal`;
   $("#readyBtn").style.display="";$("#countdown").textContent="";
@@ -763,7 +890,7 @@ $("#readyBtn").onclick=()=>{
 };
 function startPlayer(){
   const p=S.players[S.cur];
-  $("#qav").outerHTML=`<span id="qav" class="miniav" style="background:${AVATARS[p.av][1]}">${AVATARS[p.av][0]}</span>`;
+  setAv($("#qav"),p.av);
   $("#qname").textContent=p.name;
   S.qi=0;updateHud();show("quiz");showQ();
 }
@@ -824,6 +951,7 @@ function answer(i){
     p.streak=0;if(i<0)p.kosong++;else p.salah++;SFX.bad();
   }
   p.log.push({topik:q.topik,ok,jawab:i,ms:Math.round(el)});
+  const qa=$("#qav");qa.classList.remove("jump","sad");void qa.offsetWidth;qa.classList.add(ok?"jump":"sad");
   document.querySelectorAll(".opt").forEach((b,j)=>{
     b.disabled=true;
     if(j===q.kunci)b.classList.add("correct");else if(j===i)b.classList.add("wrong");else b.classList.add("dim");
@@ -871,7 +999,7 @@ function nilai(p){return p.benar*5}
 function lulus(p){return nilai(p)>=pgScaled(S.qs.length)}
 function showSummary(){
   const p=S.players[S.cur],n=S.qs.length,pass=lulus(p);
-  $("#sumav").style.background=AVATARS[p.av][1];$("#sumav").textContent=AVATARS[p.av][0];
+  setAv($("#sumav"),p.av);
   $("#sumname").textContent=p.name;
   const bd=$("#sumbadge");bd.className="badge "+(pass?"pass":"fail");bd.textContent=pass?"LULUS PG ✔":"BELUM LULUS";
   show("sum");
@@ -895,7 +1023,7 @@ function showRank(){
   const r=S.ranked,order=[1,0,2];
   $("#podium").innerHTML=order.map((idx,k)=>{
     const p=r[idx];if(!p)return "";
-    return `<div class="pod p${idx+1}">${idx===0?'<div class="crown">👑</div>':""}<span class="miniav" style="background:${AVATARS[p.av][1]};animation-delay:${.6+k*.25}s">${AVATARS[p.av][0]}</span>
+    return `<div class="pod p${idx+1}">${idx===0?'<div class="crown">👑</div>':""}<div class="podfig" style="animation-delay:${.6+k*.25}s">${avSVG(p.av,"full")}</div>
       <div class="nm">${esc(p.name)}</div><div class="pt">${p.points.toLocaleString("id-ID")} poin</div>
       <div class="bar" style="animation-delay:${k*.2}s">${idx+1}</div></div>`;
   }).join("");
@@ -1315,7 +1443,7 @@ function hostMsg(m){
       let name=String(m.name||"").trim().slice(0,16)||"Peserta";
       const taken=n=>[...OL.players.values()].some(x=>x.name.toLowerCase()===n.toLowerCase());
       if(taken(name)){let k=2;while(taken(name+" "+k))k++;name=name+" "+k}
-      p=newOnlinePlayer(m.id,name,Math.abs(m.av|0)%AVATARS.length);OL.players.set(m.id,p);SFX.click();
+      p=newOnlinePlayer(m.id,name,avNorm(m.av));OL.players.set(m.id,p);SFX.click();
     }
     olPub({t:"ack",id:m.id,name:p.name},false);
     if(OL.phase==="lobby")hostLobbyPub();else updAns();
@@ -1407,12 +1535,14 @@ $("#hEnd").onclick=()=>{
 };
 
 /* --- player --- */
+let renderStCreator=null;
 function renderStAv(){
-  $("#stAvgrid").innerHTML=AVATARS.map((a,i)=>`<button class="av${i===OL.stAv?" sel":""}" data-i="${i}" style="background:${a[1]}">${a[0]}</button>`).join("");
+  if(!renderStCreator)renderStCreator=mountCreator($("#stCreator"),()=>OL.stAv,v=>{OL.stAv=v});else renderStCreator();
 }
 function stOpenJoin(pin){
   const me=store.get("me",null);
-  if(me){$("#stName").value=me.name||"";OL.stAv=AVATARS[me.av]?me.av:0}
+  OL.stAv=me&&me.av!=null?avNorm(me.av):avRandom();
+  if(me)$("#stName").value=me.name||"";
   if(pin)$("#stPin").value=String(pin).replace(/\D/g,"").slice(0,6);
   $("#stErr").innerHTML="";renderStAv();show("stJoin");
   setTimeout(()=>($("#stPin").value?$("#stName"):$("#stPin")).focus(),100);
@@ -1457,14 +1587,14 @@ function stMsg(m){
 }
 function stShowMsg(t,x){$("#smTitle").textContent=t;$("#smText").textContent=x;show("stMsg")}
 function stHud(){
-  $("#sqAv").style.background=AVATARS[OL.myAv][1];$("#sqAv").textContent=AVATARS[OL.myAv][0];$("#sqName").textContent=OL.myName;
+  setAv($("#sqAv"),OL.myAv);$("#sqName").textContent=OL.myName;
   $("#sqScore").textContent=OL.score.toLocaleString("id-ID");$("#sqOk").textContent=OL.ok;$("#sqBad").textContent=OL.bad;
 }
 function stRender(m){
   if(m.t==="lobby"){
     cancelAnimationFrame(OL.stRaf);
     Object.assign(OL,{curQi:-1,answeredQi:-1,revealQi:-1,score:0,ok:0,bad:0,endShown:false,lastPun:""});
-    $("#swAv").style.background=AVATARS[OL.myAv][1];$("#swAv").textContent=AVATARS[OL.myAv][0];$("#swName").textContent=OL.myName;
+    setAv($("#swAv"),OL.myAv,"full");$("#swName").textContent=OL.myName;
     $("#swInfo").textContent=`PIN ${OL.pin} · ${m.players?m.players.length:0} peserta di ruang. Lihat layar guru, kuis segera dimulai…`;
     show("stWait");return;
   }
@@ -1494,7 +1624,8 @@ function stRender(m){
   if(m.t==="reveal"){
     if(OL.revealQi===m.qi&&$("#stRes").classList.contains("active"))return;
     OL.revealQi=m.qi;OL.curQi=m.qi;OL.answeredQi=m.qi;cancelAnimationFrame(OL.stRaf);
-    const r=m.res&&m.res[OL.me],box=$("#srBox");
+    const r=m.res&&m.res[OL.me],box=$("#srBox"),fig=$("#srFig");
+    setAv(fig,OL.myAv,"full");fig.classList.remove("jump","sad");void fig.offsetWidth;if(r)fig.classList.add(r.ok?"jump":"sad");
     if(!r){box.className="resbox na";box.innerHTML=`<div class="big">Lewat 🙂</div>Kamu masuk setelah soal ini dimulai.`}
     else{
       OL.score=r.pts;OL.ok=r.b;OL.bad=r.s;
@@ -1513,7 +1644,7 @@ function stRender(m){
     const r=(m.r||[]).find(x=>x.id===OL.me),box=$("#seBox");
     if(!r){box.innerHTML=`<div class="bigmsg">Sesi selesai 🏁</div><div class="hint">Kamu tidak tercatat di ronde ini.</div>`;show("stEnd");return}
     const medal=r.rk<=3?["🥇","🥈","🥉"][r.rk-1]:"#"+r.rk;
-    box.innerHTML=`<div class="bigav" style="background:${AVATARS[OL.myAv][1]}">${AVATARS[OL.myAv][0]}</div>
+    box.innerHTML=`<div class="bigav" style="background:${avBg(OL.myAv)}">${avSVG(OL.myAv,"full")}</div>
       <div class="turnname">${esc(OL.myName)}</div>
       <div class="bigmsg">${medal} <span style="font-size:20px">dari ${m.total} peserta</span></div>
       <div class="card" style="width:100%">
@@ -1545,7 +1676,6 @@ function stAnswer(i){
   SFX.click();stSent(i);
 }
 $("#sqOpts").addEventListener("click",e=>{const b=e.target.closest(".opt");if(b)stAnswer(+b.dataset.i)});
-$("#stAvgrid").addEventListener("click",e=>{const b=e.target.closest(".av");if(!b)return;OL.stAv=+b.dataset.i;SFX.click();renderStAv()});
 $("#stJoinBtn").onclick=stJoin;
 ["#stPin","#stName"].forEach(s=>$(s).addEventListener("keydown",e=>{if(e.key==="Enter")stJoin()}));
 $("#olJoinBtn").onclick=()=>stOpenJoin("");
@@ -1557,8 +1687,7 @@ window.addEventListener("beforeunload",e=>{
 });
 
 /* ---------- init ---------- */
-const usedInit=new Set(S.players.map(p=>p.av));
-S.selAv=Math.max(0,AVATARS.findIndex((_,i)=>!usedInit.has(i)));
+S.selAv=avRandom();
 renderPlayers();renderSettings();renderSource();
 const qpin=new URLSearchParams(location.search).get("pin");
 if(qpin)stOpenJoin(qpin);
