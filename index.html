@@ -292,6 +292,8 @@ canvas.av3d:active{cursor:grabbing}
 .bigav.has3d,.crfig.has3d svg{animation:none}
 .rothint{font-size:11px;margin-top:-4px}
 .podfig{width:110px;height:150px}
+.joinbig{font-size:clamp(17px,3vw,24px);font-weight:700;color:#5b21b6;word-break:break-all;background:#f5f3ff;border:2px dashed #c4b5fd;border-radius:12px;padding:8px 10px;margin:4px 0 8px}
+.joinonly #stBack{display:none}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:10}
 </style>
 </head>
@@ -481,10 +483,14 @@ Pembahasan: Rumusan resmi ada di Pembukaan UUD 1945 alinea keempat.</pre>
   <p class="hint" id="lobStatus" style="text-align:center;margin:0"></p>
   <div class="lobby">
     <div class="card" style="text-align:center">
-      <div class="hint">Buka link / pindai QR di HP, lalu masukkan PIN</div>
+      <div class="hint">Peserta buka di HP:</div>
+      <div class="joinbig" id="lobJoin"></div>
+      <div class="hint">lalu masukkan PIN</div>
       <div class="pinbox" id="lobPin">······</div>
       <div class="qrbox" id="qrbox"></div>
-      <div class="joinurl" id="lobUrl"></div>
+      <div class="hint">atau pindai QR (PIN langsung terisi)</div>
+      <button id="lobCopy" class="btn ghost small" type="button" style="margin-top:10px">📋 Salin undangan untuk grup WA</button>
+      <div class="joinurl" id="lobUrl" style="margin-top:8px"></div>
       <div class="warnbox" id="lobFile">⚠ Aplikasi ini dibuka sebagai file lokal di laptop, jadi link di atas tidak bisa dibuka dari HP. Unggah arena-twk.html ke hosting (mis. Netlify Drop atau GitHub Pages). Cara darurat: kirim file arena-twk.html ke peserta, minta mereka membukanya di browser HP, tekan "Saya peserta", lalu masukkan PIN.</div>
     </div>
     <div class="card">
@@ -501,7 +507,7 @@ Pembahasan: Rumusan resmi ada di Pembukaan UUD 1945 alinea keempat.</pre>
 <!-- ONLINE: HOST QUESTION -->
 <section id="olQ" class="screen">
   <div class="qtop">
-    <div class="who">PIN <b id="hPin"></b></div>
+    <div class="who">PIN <b id="hPin"></b> <small id="hJoin" style="opacity:.75"></small></div>
     <span class="anscount" id="hAns"></span>
     <button id="hEnd" class="btn ghost small">Akhiri sesi</button>
   </div>
@@ -1583,8 +1589,11 @@ async function hostCreate(){
   c.subscribe(OL.base+"/p",{qos:1});
   c.on("message",(t,b)=>{if(OL.client!==c)return;let m;try{m=JSON.parse(b.toString())}catch(e){return}hostMsg(m)});
   netWatch(c);
-  const url=location.href.split(/[?#]/)[0]+"?pin="+OL.pin;
+  const base=location.href.split(/[?#]/)[0].replace(/index\.html$/,"");
+  const url=base+"?pin="+OL.pin,joinUrl=base+"join/",joinShort=joinUrl.replace(/^https?:\/\//,"").replace(/\/$/,"");
+  OL.invite=`Ayo gabung kuis Arena TWK! 🎮\nBuka: ${joinUrl}\nPIN: ${OL.pin}\n\nAtau langsung (PIN otomatis): ${url}`;
   $("#lobPin").textContent=OL.pin;$("#hPin").textContent=OL.pin;$("#lobUrl").textContent=url;
+  $("#lobJoin").textContent=joinShort;$("#hJoin").textContent="· "+joinShort;
   $("#lobFile").style.display=location.protocol==="file:"?"":"none";
   $("#lobStatus").textContent=`${qs.length} soal · ${S.set.t} detik per soal · menunggu peserta…`;
   loadLib(QR_URL,"QRCode").then(Q=>{$("#qrbox").innerHTML="";new Q($("#qrbox"),{text:url,width:220,height:220,correctLevel:Q.CorrectLevel.M})}).catch(()=>{});
@@ -1691,6 +1700,12 @@ function hostAgain(){
 $("#olCreate").onclick=hostCreate;
 $("#lobStart").onclick=()=>{if(!OL.players.size)return;OL.qi=0;hostQuestion()};
 $("#lobCancel").onclick=()=>{olClose(true);show("home")};
+$("#lobCopy").onclick=async()=>{
+  const b=$("#lobCopy");if(!OL.invite)return;
+  try{await navigator.clipboard.writeText(OL.invite);b.textContent="✔ Tersalin! Tempel di grup WA"}
+  catch(e){const ta=document.createElement("textarea");ta.value=OL.invite;document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand("copy")}catch(_){}ta.remove();b.textContent=ok?"✔ Tersalin! Tempel di grup WA":"Salin manual teks di bawah"}
+  setTimeout(()=>{b.textContent="📋 Salin undangan untuk grup WA"},2500);
+};
 $("#hSkip").onclick=()=>{if(OL.phase==="q")hostReveal()};
 $("#hBoardBtn").onclick=hostBoard;
 $("#boardNext").onclick=()=>{OL.qi++;if(OL.qi<OL.qs.length)hostQuestion();else hostEnd()};
@@ -1857,8 +1872,13 @@ window.addEventListener("beforeunload",e=>{
 /* ---------- init ---------- */
 S.selAv=avRandom();
 renderPlayers();renderSettings();renderSource();scan3D();
-const qpin=new URLSearchParams(location.search).get("pin");
-if(qpin)stOpenJoin(qpin);
+const qp=new URLSearchParams(location.search),qpin=qp.get("pin");
+const JOINONLY=qp.has("join")||!!qpin;
+if(JOINONLY){
+  document.body.classList.add("joinonly");document.title="Gabung Arena TWK";
+  $("#smBack").textContent="↻ Gabung lagi";$("#smBack").onclick=()=>stOpenJoin("");
+  stOpenJoin(qpin||"");
+}
 else if(SRC.type==="link"&&SRC.link)loadFromLink(SRC.link,true);
 })();
 </script>
