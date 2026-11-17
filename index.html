@@ -1,0 +1,1569 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arena TWK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#1e0b45;--bg2:#4a1a8f;--card:#ffffff;--ink:#1d1235;--muted:#6b6385;
+  --ok:#1f9d55;--bad:#e21b3c;--gold:#ffc83d;--silver:#cfd8e3;--bronze:#e0915a;
+  --o0:#e21b3c;--o1:#1368ce;--o2:#d89e00;--o3:#26890c;--o4:#864cbf;
+  --radius:18px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:"Fredoka",system-ui,"Segoe UI",sans-serif;color:#fff;
+  background:radial-gradient(circle at 20% 10%,#6d28d9 0,transparent 45%),radial-gradient(circle at 85% 90%,#be185d 0,transparent 40%),linear-gradient(160deg,var(--bg1),var(--bg2));
+  background-attachment:fixed;overflow-x:hidden;
+}
+.bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.bg span{position:absolute;bottom:-80px;border-radius:30%;opacity:.12;animation:floatUp linear infinite}
+@keyframes floatUp{to{transform:translateY(-120vh) rotate(360deg)}}
+main{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:20px 16px 40px}
+.screen{display:none;flex-direction:column;gap:16px;animation:screenIn .45s cubic-bezier(.2,.9,.3,1.2)}
+.screen.active{display:flex}
+@keyframes screenIn{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
+.center{align-items:center;text-align:center;justify-content:center;min-height:80vh}
+
+/* logo */
+.logo{font-size:clamp(42px,9vw,84px);margin:8px 0 0;text-align:center;letter-spacing:2px;line-height:1}
+.logo span{display:inline-block;animation:bounce 1.8s ease-in-out infinite;text-shadow:0 6px 0 rgba(0,0,0,.25)}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.tag{text-align:center;margin:0;opacity:.85;font-size:18px}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--card);color:var(--ink);border-radius:var(--radius);padding:18px;box-shadow:0 10px 0 rgba(0,0,0,.18)}
+.card h2,.card h3{margin:0 0 12px}
+.card h3{font-size:17px;margin-top:6px}
+.card label{display:flex;flex-direction:column;gap:6px;font-weight:500;margin-bottom:12px}
+.card label.row{flex-direction:row;align-items:center;gap:8px}
+input[type=text],input[type=number],select,textarea{
+  font:inherit;padding:10px 12px;border:2px solid #ddd6f3;border-radius:12px;color:var(--ink);background:#faf8ff;width:100%
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#7c3aed}
+textarea{resize:vertical;font-size:15px}
+.hint{color:var(--muted);font-size:14px}
+.screen>.hint,.center .hint{color:rgba(255,255,255,.8)}
+
+.btn{
+  font:inherit;font-weight:600;border:0;border-radius:14px;padding:12px 18px;cursor:pointer;
+  background:#7c3aed;color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.25);transition:transform .1s,box-shadow .1s,filter .2s
+}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.big{font-size:22px;padding:16px 28px}
+.btn.go{background:linear-gradient(180deg,#22c55e,#16a34a)}
+.btn.ghost{background:rgba(255,255,255,.15);color:#fff}
+.card .btn.ghost{background:#ede9fe;color:#5b21b6}
+.btn.small{font-size:14px;padding:8px 12px}
+.btn.warn{background:linear-gradient(180deg,#f43f5e,#be123c)}
+.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-4px)}}
+
+.avgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin:12px 0}
+@media (max-width:420px){.avgrid{grid-template-columns:repeat(4,1fr)}}
+.av{aspect-ratio:1;border-radius:14px;border:3px solid transparent;font-size:26px;cursor:pointer;display:grid;place-items:center;transition:transform .15s}
+.av:hover{transform:scale(1.1) rotate(-6deg)}
+.av.sel{border-color:var(--ink);transform:scale(1.12);box-shadow:0 0 0 3px #fff inset}
+.plist{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pchip{display:flex;align-items:center;gap:6px;background:#f3efff;border-radius:999px;padding:4px 6px 4px 4px;animation:pop .35s}
+.pchip .miniav{width:30px;height:30px;font-size:18px}
+.pchip button{border:0;background:none;cursor:pointer;color:#a19bb8;font-size:16px}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.miniav{display:inline-grid;place-items:center;border-radius:50%;width:38px;height:38px;font-size:22px;flex:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.tchip{border:2px solid #ddd6f3;background:#fff;border-radius:999px;padding:5px 10px;font:inherit;font-size:14px;cursor:pointer;color:var(--muted)}
+.tchip.on{background:#7c3aed;border-color:#7c3aed;color:#fff}
+#startBtn{align-self:center}
+
+/* turn */
+.turnlabel{font-size:22px;letter-spacing:4px;text-transform:uppercase;opacity:.8}
+.bigav{width:160px;height:160px;border-radius:50%;display:grid;place-items:center;font-size:92px;box-shadow:0 0 0 8px rgba(255,255,255,.25);animation:wobble 2s ease-in-out infinite}
+@keyframes wobble{0%,100%{transform:rotate(-6deg) scale(1)}50%{transform:rotate(6deg) scale(1.06)}}
+.turnname{font-size:clamp(34px,7vw,56px);font-weight:700}
+.countdown{font-size:140px;font-weight:700;min-height:0;line-height:1}
+.countdown.tick{animation:zoom .7s ease-out}
+@keyframes zoom{from{transform:scale(2.4);opacity:0}30%{opacity:1}to{transform:scale(1);opacity:.9}}
+
+/* quiz */
+.qtop{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.who{display:flex;align-items:center;gap:8px;font-size:20px}
+.stats{display:flex;gap:10px;align-items:center;font-size:18px}
+.stats .ok{background:var(--ok);padding:4px 12px;border-radius:999px}
+.stats .bad{background:var(--bad);padding:4px 12px;border-radius:999px}
+.streak{font-weight:700;color:var(--gold)}
+.streak.pulse{animation:pop .4s}
+.score{font-size:28px;font-weight:700;background:rgba(0,0,0,.25);padding:4px 16px;border-radius:14px;position:relative}
+.score small{font-size:14px;opacity:.8}
+.gainpop{position:absolute;right:8px;top:-6px;color:var(--gold);font-weight:700;font-size:24px;animation:rise 1.2s ease-out forwards;pointer-events:none;white-space:nowrap}
+@keyframes rise{from{transform:translateY(0);opacity:1}to{transform:translateY(-50px);opacity:0}}
+.prog{position:relative;height:22px;background:rgba(0,0,0,.3);border-radius:999px;overflow:hidden}
+.prog>div{height:100%;width:0;background:linear-gradient(90deg,#facc15,#fb923c,#f43f5e);border-radius:999px;transition:width .6s cubic-bezier(.2,.9,.3,1)}
+.prog span{position:absolute;inset:0;display:grid;place-items:center;font-size:13px;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.qmid{display:flex;gap:16px;align-items:stretch}
+.timer{position:relative;width:110px;height:110px;flex:none;align-self:center}
+.timer svg{width:100%;height:100%;transform:rotate(-90deg)}
+.timer circle{fill:none;stroke-width:10}
+.timer .trk{stroke:rgba(255,255,255,.18)}
+.timer .rng{stroke:#22c55e;stroke-linecap:round;stroke-dasharray:276.46;stroke-dashoffset:0;transition:stroke .3s}
+.timer.warn .rng{stroke:#facc15}
+.timer.hurry .rng{stroke:#ef4444}
+.timer.hurry{animation:heartbeat .5s infinite}
+@keyframes heartbeat{50%{transform:scale(1.08)}}
+.timer span{position:absolute;inset:0;display:grid;place-items:center;font-size:36px;font-weight:700}
+.qcard{flex:1;background:#fff;color:var(--ink);border-radius:var(--radius);padding:18px 20px;box-shadow:0 8px 0 rgba(0,0,0,.2)}
+.qcard.enter{animation:slideQ .5s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes slideQ{from{transform:translateX(60px) rotate(2deg);opacity:0}to{transform:none;opacity:1}}
+.chip{display:inline-block;background:#ede9fe;color:#5b21b6;border-radius:999px;padding:3px 12px;font-size:14px;font-weight:600;margin-bottom:8px}
+.qtext{font-size:clamp(18px,2.6vw,24px);line-height:1.4;font-weight:500}
+@media (max-width:600px){.qmid{flex-direction:column}.timer{width:84px;height:84px}.timer span{font-size:28px}}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opts .opt:last-child:nth-child(odd){grid-column:1/-1}
+@media (max-width:600px){.opts{grid-template-columns:1fr}}
+.opt{
+  display:flex;align-items:center;gap:12px;text-align:left;font:inherit;font-size:clamp(16px,2.2vw,19px);font-weight:500;color:#fff;
+  border:0;border-radius:16px;padding:14px 16px;min-height:68px;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.25);
+  transition:transform .12s,opacity .3s,filter .3s;animation:optIn .45s backwards
+}
+.opt:hover:not(:disabled){transform:translateY(-3px) scale(1.01)}
+.opt:active:not(:disabled){transform:translateY(3px)}
+.opt .sh{flex:none;width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.22);display:grid;place-items:center;font-weight:700;font-size:20px}
+.opt:disabled{cursor:default}
+.opt.dim{opacity:.3;filter:grayscale(.6)}
+.opt.correct{box-shadow:0 0 0 5px #fff,0 0 30px 6px rgba(34,197,94,.9);animation:correctPop .5s}
+.opt.wrong{animation:shake .45s;box-shadow:0 0 0 5px #111}
+.opt.correct .sh::after{content:"✔"}.opt.wrong .sh::after{content:"✖"}
+.opt.correct .sh span,.opt.wrong .sh span{display:none}
+@keyframes correctPop{50%{transform:scale(1.05)}}
+@keyframes optIn{from{transform:translateY(30px) scale(.9);opacity:0}}
+.fb{display:none;background:#fff;color:var(--ink);border-radius:var(--radius);padding:16px 18px;box-shadow:0 8px 0 rgba(0,0,0,.2);border-left:10px solid var(--ok)}
+.fb.show{display:block;animation:screenIn .4s}
+.fb.no{border-left-color:var(--bad)}
+.fbhead{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:24px;font-weight:700}
+.fb.ok .fbhead span:first-child{color:var(--ok)}.fb.no .fbhead span:first-child{color:var(--bad)}
+.gain{color:#b45309}
+.bahas{margin:8px 0 12px;color:#3d3558;line-height:1.5}
+.quit{flex:none;border:0;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.35);color:#fff;font-size:18px;cursor:pointer}
+
+/* summary */
+.sumcard{width:min(560px,100%);text-align:left}
+.sumgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.sumgrid div{background:#f5f3ff;border-radius:12px;padding:10px;text-align:center}
+.sumgrid b{display:block;font-size:26px}
+.badge{display:inline-block;padding:6px 16px;border-radius:999px;font-weight:700;color:#fff;font-size:18px;animation:pop .5s .3s backwards}
+.badge.pass{background:var(--ok)}.badge.fail{background:var(--bad)}
+.tbar{display:grid;grid-template-columns:170px 1fr 48px;align-items:center;gap:8px;font-size:14px;margin:5px 0}
+.tbar .tr{height:12px;background:#eee;border-radius:999px;overflow:hidden}
+.tbar .tr div{height:100%;border-radius:999px;width:0;transition:width .9s .2s}
+@media (max-width:480px){.tbar{grid-template-columns:110px 1fr 40px}.sumgrid{grid-template-columns:repeat(2,1fr)}}
+
+/* rank */
+.title{font-size:clamp(30px,6vw,46px);text-align:center;margin:0}
+.podium{display:flex;justify-content:center;align-items:flex-end;gap:12px;min-height:300px;margin-top:10px}
+.pod{display:flex;flex-direction:column;align-items:center;width:min(30%,180px)}
+.pod .miniav{width:72px;height:72px;font-size:42px;animation:pop .5s backwards;box-shadow:0 0 0 4px #fff}
+.pod .nm{font-weight:700;font-size:18px;margin:6px 0 2px;text-align:center;word-break:break-word}
+.pod .pt{opacity:.9;margin-bottom:6px}
+.pod .bar{width:100%;border-radius:14px 14px 0 0;display:grid;place-items:start center;padding-top:10px;font-size:40px;font-weight:700;color:rgba(0,0,0,.45);transform-origin:bottom;animation:grow .9s cubic-bezier(.2,.9,.3,1.1) backwards}
+@keyframes grow{from{transform:scaleY(0)}}
+.p1 .bar{height:180px;background:linear-gradient(180deg,#ffe58a,var(--gold))}
+.p2 .bar{height:130px;background:linear-gradient(180deg,#f1f5f9,var(--silver))}
+.p3 .bar{height:95px;background:linear-gradient(180deg,#f7c39e,var(--bronze))}
+.crown{font-size:34px;animation:bounce 1.4s infinite}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 8px;text-align:left;border-bottom:1px solid #eee;font-size:15px}
+th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase}
+tbody tr{animation:rowIn .5s backwards}
+@keyframes rowIn{from{transform:translateX(-30px);opacity:0}}
+.tag-pass{color:var(--ok);font-weight:700}.tag-fail{color:var(--bad);font-weight:700}
+.tblwrap{overflow-x:auto}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+
+/* punish */
+.punlist{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.pun{display:flex;align-items:center;gap:10px;border:2px solid #ede9fe;border-radius:14px;padding:8px;cursor:pointer;background:#fff;font:inherit;text-align:left;color:var(--ink)}
+.pun.sel{border-color:#7c3aed;background:#f5f3ff}
+.pun .pres{font-size:13px;color:#be123c;font-weight:600}
+.wheelcard{display:flex;flex-direction:column;align-items:center;gap:12px}
+.wheelwrap{position:relative;width:min(380px,100%);aspect-ratio:1}
+.wheelwrap canvas{width:100%;height:100%;transition:transform 5.2s cubic-bezier(.12,.75,.1,1)}
+.pointer{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:40px;color:#e21b3c;z-index:2;text-shadow:0 3px 0 rgba(0,0,0,.25)}
+.punres{min-height:60px;text-align:center;font-size:20px;font-weight:700;color:#be123c}
+.punres.show{animation:pop .5s}
+/* source */
+.srcstatus{background:#f5f3ff;border-radius:12px;padding:10px 12px;margin-bottom:10px;font-weight:500}
+.srcrow{display:flex;gap:8px}
+.srcrow input{flex:1}
+.srcbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.card label.filebtn{display:inline-flex;flex-direction:row;margin:0;font-weight:600}
+.srcmsg{margin-top:10px;font-size:14px;line-height:1.5}
+.srcmsg:empty{display:none}
+.srcmsg .ok{color:var(--ok);font-weight:600}.srcmsg .err{color:var(--bad);font-weight:600}
+.srcmsg ul{margin:4px 0 0;padding-left:20px;color:#7a2236}
+.howto{margin-top:10px;border-top:1px solid #eee;padding-top:8px}
+.howto summary{cursor:pointer;font-weight:600;color:#5b21b6}
+.howto h4{margin:12px 0 4px}.howto p{margin:4px 0;line-height:1.5;font-size:15px}
+.howto code{background:#f3efff;padding:1px 5px;border-radius:6px;font-size:13px}
+.howto pre{background:#1d1235;color:#e9e3ff;padding:12px;border-radius:12px;font-size:13px;overflow-x:auto;white-space:pre-wrap}
+.srclist{max-height:340px;overflow:auto;margin-top:8px;font-size:14px}
+.srclist .it{padding:6px 0;border-bottom:1px solid #f0edf8}
+.srclist .k{color:var(--ok);font-weight:600}
+@media (max-width:520px){.srcrow{flex-direction:column}}
+/* online */
+.modebtns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+#olCreate{background:linear-gradient(180deg,#38bdf8,#0369a1)}
+.lobby{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px}
+@media (max-width:760px){.lobby{grid-template-columns:1fr}}
+.pinbox{font-size:clamp(48px,10vw,84px);font-weight:700;letter-spacing:8px;line-height:1.1;color:var(--ink)}
+.qrbox{display:grid;place-items:center;margin:12px 0;min-height:10px}
+.qrbox img,.qrbox canvas{max-width:220px;height:auto;padding:8px;background:#fff}
+.joinurl{word-break:break-all;font-size:14px;background:#f5f3ff;padding:8px;border-radius:10px}
+.warnbox{background:#fff7ed;color:#9a3412;border-radius:12px;padding:10px;font-size:14px;margin-top:10px;text-align:left;line-height:1.45}
+.lp{display:flex;flex-wrap:wrap;gap:10px}
+.lp .pchip{font-size:17px}
+.anscount{font-size:20px;font-weight:600;background:rgba(0,0,0,.25);padding:4px 14px;border-radius:999px}
+div.opt{cursor:default}
+.opt .cnt{margin-left:auto;background:rgba(0,0,0,.28);border-radius:999px;padding:2px 12px;font-weight:700;display:none;flex:none}
+.reveal .opt .cnt{display:inline-block}
+.board{display:flex;flex-direction:column;gap:10px;max-width:640px;width:100%;margin:0 auto}
+.brow{display:flex;align-items:center;gap:12px;background:#fff;color:var(--ink);border-radius:14px;padding:10px 14px;animation:rowIn .5s backwards;box-shadow:0 5px 0 rgba(0,0,0,.18)}
+.brow .rk{font-weight:700;font-size:22px;width:30px}
+.brow .pts{margin-left:auto;font-weight:700;font-size:20px;text-align:right}
+.brow .gn{display:block;color:var(--ok);font-size:13px;font-weight:600}
+.st{max-width:560px;width:100%;margin-left:auto;margin-right:auto}
+.pininput{font-size:28px!important;letter-spacing:6px;text-align:center;font-weight:700}
+.opts.one{grid-template-columns:1fr}
+.sttimer{display:flex;align-items:center;gap:10px}
+.stbar{flex:1;height:12px;background:rgba(255,255,255,.2);border-radius:999px;overflow:hidden}
+.stbar div{height:100%;width:100%;background:#22c55e;border-radius:999px}
+.stbar.hurry div{background:#ef4444}
+.bigmsg{font-size:clamp(26px,7vw,40px);font-weight:700}
+.resbox{width:100%;border-radius:var(--radius);padding:22px;text-align:center;color:#fff;box-shadow:0 8px 0 rgba(0,0,0,.2);animation:pop .45s}
+.resbox.ok{background:var(--ok)}.resbox.no{background:var(--bad)}.resbox.na{background:#6b7280}
+.resbox .big{font-size:40px;font-weight:700}
+.center .card .hint{color:var(--muted)}
+.loader{display:flex;gap:8px}.loader span{width:12px;height:12px;border-radius:50%;background:#fff;animation:bounce 1s infinite}
+.loader span:nth-child(2){animation-delay:.15s}.loader span:nth-child(3){animation-delay:.3s}
+.netbar{position:fixed;top:0;left:0;right:0;z-index:20;background:#b45309;color:#fff;text-align:center;padding:6px;font-size:14px;transform:translateY(-100%);transition:transform .3s}
+.netbar.show{transform:none}
+.err{color:var(--bad);font-weight:600}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:10}
+</style>
+</head>
+<body>
+<div class="bg" id="bg"></div>
+<canvas id="confetti"></canvas>
+<main>
+
+<!-- HOME -->
+<section id="home" class="screen active">
+  <h1 class="logo" id="logo">ARENA TWK</h1>
+  <p class="tag">Latihan Tes Wawasan Kebangsaan · SKD CPNS</p>
+  <div class="grid2">
+    <div class="card">
+      <h2>1 · Daftar Peserta</h2>
+      <input type="text" id="pname" maxlength="16" placeholder="Ketik nama peserta, lalu Enter">
+      <div class="hint" style="margin-top:10px">Pilih karakter:</div>
+      <div id="avgrid" class="avgrid"></div>
+      <button id="addp" class="btn">+ Tambah Peserta</button>
+      <div id="plist" class="plist"></div>
+    </div>
+    <div class="card">
+      <h2>2 · Pengaturan</h2>
+      <div class="hint">Topik soal</div>
+      <div id="topics" class="chips"></div>
+      <label>Jumlah soal <select id="sn"></select></label>
+      <label>Waktu per soal
+        <select id="st"><option value="10">10 detik</option><option value="15">15 detik</option><option value="20" selected>20 detik</option><option value="30">30 detik</option><option value="45">45 detik</option><option value="60">60 detik</option></select>
+      </label>
+      <label>Passing grade TWK (skala resmi 0–150)
+        <input type="number" id="spg" min="0" max="150" value="65">
+      </label>
+      <div class="hint" id="pghint"></div>
+      <label class="row" style="margin-top:10px"><input type="checkbox" id="ssound" checked> Efek suara</label>
+      <label class="row"><input type="checkbox" id="sbahas" checked> Tampilkan pembahasan tiap soal</label>
+    </div>
+  </div>
+  <div class="card" id="srcCard">
+    <h2>3 · Sumber Soal</h2>
+    <div id="srcStatus" class="srcstatus"></div>
+    <div class="srcrow">
+      <input type="text" id="srcUrl" placeholder="Tempel link Google Sheets / Google Docs (akses: siapa saja yang memiliki link)">
+      <button id="srcLoad" class="btn">Muat</button>
+    </div>
+    <div class="srcbtns">
+      <label class="btn ghost small filebtn">📂 Unggah file (.xlsx .csv .docx .txt .json)<input type="file" id="srcFile" accept=".csv,.tsv,.xlsx,.xls,.ods,.txt,.docx,.json" hidden></label>
+      <button id="srcRefresh" class="btn ghost small">↻ Perbarui dari link</button>
+      <button id="srcBuiltin" class="btn ghost small">Pakai soal bawaan</button>
+      <button id="tplCsv" class="btn ghost small">⬇ Template Sheets/Excel (CSV)</button>
+      <button id="tplTxt" class="btn ghost small">⬇ Template Docs/Word (TXT)</button>
+    </div>
+    <div id="srcMsg" class="srcmsg"></div>
+    <details class="howto">
+      <summary>Cara menyiapkan dan memperbarui soal</summary>
+      <h4>A. Google Sheets atau Excel (disarankan)</h4>
+      <p>Baris pertama berisi judul kolom: <code>topik | soal | a | b | c | d | e | kunci | pembahasan</code>. Satu baris = satu soal. Kolom <code>kunci</code> diisi huruf A–E. Opsi D dan E boleh kosong. Unduh template CSV di atas, lalu buka di Google Sheets (File → Impor) atau Excel.</p>
+      <p>Untuk Google Sheets: klik <b>Bagikan</b> → Akses umum → <b>Siapa saja yang memiliki link</b> (Pelihat), salin link, tempel di kolom di atas, klik <b>Muat</b>. Setelah itu, setiap kali aplikasi dibuka, soal otomatis diambil ulang dari Sheets, jadi cukup edit spreadsheet-nya.</p>
+      <h4>B. Google Docs, Word, atau Notepad</h4>
+      <p>Tulis dengan format berikut. Baris <code># Nama Topik</code> berlaku untuk soal-soal di bawahnya. Kunci juga bisa ditandai dengan bintang di depan opsi, misalnya <code>*C. ...</code>.</p>
+<pre># Pancasila
+1. Rumusan Pancasila yang sah tercantum dalam ...
+A. Piagam Jakarta
+B. Pembukaan UUD 1945 alinea keempat
+C. Pidato 1 Juni 1945
+D. Batang tubuh UUD 1945
+E. Penjelasan UUD 1945
+Kunci: B
+Pembahasan: Rumusan resmi ada di Pembukaan UUD 1945 alinea keempat.</pre>
+      <p>Google Docs juga bisa lewat link (bagikan ke siapa saja yang memiliki link). Kalau browser menolak memuatnya, pilih File → Download → .docx, lalu unggah filenya.</p>
+      <p class="hint">Soal yang formatnya salah dilewati dan disebutkan nomornya, soal lain tetap dimuat. Soal terakhir yang berhasil dimuat disimpan di browser, jadi aplikasi tetap jalan saat offline.</p>
+    </details>
+    <details class="howto">
+      <summary>Lihat daftar soal aktif (<span id="srcCount">0</span>)</summary>
+      <div id="srcList" class="srclist"></div>
+    </details>
+  </div>
+  <div class="modebtns">
+    <button id="olCreate" class="btn big">🌐 Mode Online: Buat Ruang</button>
+    <button id="startBtn" class="btn big go">Mulai Kuis ▶</button>
+  </div>
+  <div class="modebtns"><button id="olJoinBtn" class="btn ghost">📱 Saya peserta: gabung lewat PIN</button></div>
+  <p class="hint" style="text-align:center"><b>Mode Online:</b> soal tampil di layar ini, tiap peserta menjawab serentak dari HP masing-masing lewat PIN/QR (butuh internet; daftar peserta di atas tidak dipakai).<br><b>Mode Giliran:</b> peserta di daftar atas mengerjakan bergantian di perangkat ini. Pintasan keyboard: 1–5 atau A–E untuk menjawab, Enter untuk lanjut.</p>
+</section>
+
+<!-- TURN -->
+<section id="turn" class="screen center">
+  <div class="turnlabel">Giliran</div>
+  <div id="turnav" class="bigav"></div>
+  <div id="turnname" class="turnname"></div>
+  <div id="turnmeta" class="hint"></div>
+  <button id="readyBtn" class="btn big go">Saya Siap!</button>
+  <div id="countdown" class="countdown"></div>
+</section>
+
+<!-- QUIZ -->
+<section id="quiz" class="screen">
+  <div class="qtop">
+    <div class="who"><button id="quitBtn" class="quit" title="Akhiri sesi">✕</button><span id="qav" class="miniav"></span><b id="qname"></b></div>
+    <div class="stats">
+      <span class="ok">✔ <b id="qok">0</b></span>
+      <span class="bad">✖ <b id="qbad">0</b></span>
+      <span id="qstreak" class="streak"></span>
+    </div>
+    <div class="score" id="scorebox"><span id="qscore">0</span> <small>poin</small></div>
+  </div>
+  <div class="prog"><div id="progbar"></div><span id="progtxt"></span></div>
+  <div class="qmid">
+    <div class="timer" id="timer">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="trk"/><circle id="ring" cx="50" cy="50" r="44" class="rng"/></svg>
+      <span id="tnum"></span>
+    </div>
+    <div class="qcard" id="qcard"><div id="qtopic" class="chip"></div><div id="qtext" class="qtext"></div></div>
+  </div>
+  <div id="opts" class="opts"></div>
+  <div id="fb" class="fb">
+    <div class="fbhead"><span id="fbtitle"></span><span id="fbgain" class="gain"></span></div>
+    <div id="fbans" style="margin-top:6px"></div>
+    <div id="fbbahas" class="bahas"></div>
+    <button id="nextBtn" class="btn go">Lanjut ▶</button>
+  </div>
+</section>
+
+<!-- SUMMARY -->
+<section id="sum" class="screen center">
+  <div class="card sumcard">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="sumav" class="miniav" style="width:64px;height:64px;font-size:38px"></span>
+      <div><div class="hint">Hasil</div><h2 id="sumname" style="margin:0"></h2></div>
+      <span id="sumbadge" class="badge" style="margin-left:auto"></span>
+    </div>
+    <div class="sumgrid">
+      <div><b id="sumpts">0</b>Poin</div>
+      <div><b id="sumok" style="color:var(--ok)">0</b>Benar</div>
+      <div><b id="sumbad" style="color:var(--bad)">0</b>Salah</div>
+      <div><b id="sumnil">0</b>Nilai TWK</div>
+    </div>
+    <div class="hint" id="sumpg"></div>
+    <h3 style="margin-top:14px">Penguasaan per topik</h3>
+    <div id="sumtopics"></div>
+  </div>
+  <button id="sumNext" class="btn big go"></button>
+</section>
+
+<!-- RANK -->
+<section id="rank" class="screen">
+  <h2 class="title">🏆 Papan Peringkat</h2>
+  <div class="podium" id="podium"></div>
+  <div class="card tblwrap">
+    <table>
+      <thead><tr><th>#</th><th>Peserta</th><th>Poin</th><th>Benar</th><th>Salah</th><th>Nilai</th><th>Status</th><th>Topik terlemah</th></tr></thead>
+      <tbody id="ranktbl"></tbody>
+    </table>
+  </div>
+  <div class="actions">
+    <button id="toPunish" class="btn big warn">🎡 Roda Hukuman</button>
+    <button id="csvBtn" class="btn ghost">⬇ Unduh hasil (CSV)</button>
+    <button id="againBtn" class="btn ghost">↻ Main lagi</button>
+    <button id="homeBtn" class="btn ghost">⌂ Beranda</button>
+  </div>
+</section>
+
+<!-- PUNISH -->
+<section id="punish" class="screen">
+  <h2 class="title">🎡 Roda Hukuman</h2>
+  <p class="hint" id="punhint" style="text-align:center;margin:0"></p>
+  <div class="grid2">
+    <div class="card">
+      <h3>Peserta di bawah passing grade</h3>
+      <div id="punlist" class="punlist"></div>
+      <h3>Daftar hukuman <small class="hint">(satu per baris, bisa diedit)</small></h3>
+      <textarea id="puntext" rows="9"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px"><button id="punreset" class="btn ghost small">Kembalikan default</button></div>
+    </div>
+    <div class="card wheelcard">
+      <div class="wheelwrap"><div class="pointer">▼</div><canvas id="wheel" width="760" height="760"></canvas></div>
+      <div id="spinfor" class="hint"></div>
+      <button id="spinBtn" class="btn big go">PUTAR!</button>
+      <div id="punres" class="punres"></div>
+    </div>
+  </div>
+  <div class="actions"><button id="backRank" class="btn ghost">◀ Kembali ke peringkat</button></div>
+</section>
+
+<!-- ONLINE: HOST LOBBY -->
+<section id="olLobby" class="screen">
+  <h2 class="title">🌐 Ruang Online</h2>
+  <p class="hint" id="lobStatus" style="text-align:center;margin:0"></p>
+  <div class="lobby">
+    <div class="card" style="text-align:center">
+      <div class="hint">Buka link / pindai QR di HP, lalu masukkan PIN</div>
+      <div class="pinbox" id="lobPin">······</div>
+      <div class="qrbox" id="qrbox"></div>
+      <div class="joinurl" id="lobUrl"></div>
+      <div class="warnbox" id="lobFile">⚠ Aplikasi ini dibuka sebagai file lokal di laptop, jadi link di atas tidak bisa dibuka dari HP. Unggah arena-twk.html ke hosting (mis. Netlify Drop atau GitHub Pages). Cara darurat: kirim file arena-twk.html ke peserta, minta mereka membukanya di browser HP, tekan "Saya peserta", lalu masukkan PIN.</div>
+    </div>
+    <div class="card">
+      <h3>Peserta masuk: <span id="lobCount">0</span></h3>
+      <div id="lobPlayers" class="lp"><span class="hint">Menunggu peserta…</span></div>
+    </div>
+  </div>
+  <div class="actions">
+    <button id="lobStart" class="btn big go" disabled>Mulai Kuis ▶</button>
+    <button id="lobCancel" class="btn ghost">✕ Tutup ruang</button>
+  </div>
+</section>
+
+<!-- ONLINE: HOST QUESTION -->
+<section id="olQ" class="screen">
+  <div class="qtop">
+    <div class="who">PIN <b id="hPin"></b></div>
+    <span class="anscount" id="hAns"></span>
+    <button id="hEnd" class="btn ghost small">Akhiri sesi</button>
+  </div>
+  <div class="prog"><div id="hProg"></div><span id="hProgTxt"></span></div>
+  <div class="qmid">
+    <div class="timer" id="hTimer">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="trk"/><circle id="hRing" cx="50" cy="50" r="44" class="rng"/></svg>
+      <span id="hTnum"></span>
+    </div>
+    <div class="qcard" id="hCard"><div id="hTopic" class="chip"></div><div id="hText" class="qtext"></div></div>
+  </div>
+  <div id="hOpts" class="opts"></div>
+  <div class="actions"><button id="hSkip" class="btn ghost">⏭ Tampilkan jawaban sekarang</button></div>
+  <div id="hFb" class="fb">
+    <div class="fbhead"><span id="hFbTitle"></span><span id="hFbStat" class="gain"></span></div>
+    <div id="hFbBahas" class="bahas"></div>
+    <button id="hBoardBtn" class="btn go">Papan skor ▶</button>
+  </div>
+</section>
+
+<!-- ONLINE: HOST INTERIM BOARD -->
+<section id="olBoard" class="screen">
+  <h2 class="title">📊 Papan Skor Sementara</h2>
+  <p class="hint" id="boardInfo" style="text-align:center;margin:0"></p>
+  <div class="board" id="board"></div>
+  <div class="actions"><button id="boardNext" class="btn big go"></button></div>
+</section>
+
+<!-- ONLINE: PLAYER -->
+<section id="stJoin" class="screen">
+  <h2 class="title">📱 Gabung Kuis</h2>
+  <div class="card st">
+    <label>PIN dari layar guru <input type="text" id="stPin" inputmode="numeric" maxlength="6" placeholder="6 angka" class="pininput" autocomplete="off"></label>
+    <label>Nama <input type="text" id="stName" maxlength="16" placeholder="Nama kamu" autocomplete="off"></label>
+    <div class="hint">Pilih karakter:</div>
+    <div id="stAvgrid" class="avgrid"></div>
+    <button id="stJoinBtn" class="btn big go" style="width:100%">Gabung ▶</button>
+    <div id="stErr" class="srcmsg"></div>
+  </div>
+  <div class="actions"><button id="stBack" class="btn ghost small">⌂ Beranda</button></div>
+</section>
+<section id="stWait" class="screen center st">
+  <div id="swAv" class="bigav"></div>
+  <div id="swName" class="turnname"></div>
+  <div class="bigmsg">Kamu sudah masuk! 🎉</div>
+  <div class="hint" id="swInfo">Lihat layar guru. Kuis segera dimulai…</div>
+  <div class="loader"><span></span><span></span><span></span></div>
+</section>
+<section id="stQ" class="screen st">
+  <div class="qtop">
+    <div class="who"><span id="sqAv" class="miniav"></span><b id="sqName"></b></div>
+    <div class="stats"><span class="ok">✔ <b id="sqOk">0</b></span><span class="bad">✖ <b id="sqBad">0</b></span></div>
+    <div class="score"><span id="sqScore">0</span> <small>poin</small></div>
+  </div>
+  <div class="prog"><div id="sqProg"></div><span id="sqProgTxt"></span></div>
+  <div class="sttimer"><div class="stbar"><div id="sqBar"></div></div><b id="sqNum"></b></div>
+  <div class="qcard" id="sqCard"><div id="sqTopic" class="chip"></div><div id="sqText" class="qtext"></div></div>
+  <div id="sqOpts" class="opts one"></div>
+</section>
+<section id="stSent" class="screen center st">
+  <div id="ssIcon" style="font-size:80px">📨</div>
+  <div class="bigmsg" id="ssTitle"></div>
+  <div id="ssPick" style="width:100%"></div>
+  <div class="hint">Tunggu hasilnya di layar guru…</div>
+  <div class="loader"><span></span><span></span><span></span></div>
+</section>
+<section id="stRes" class="screen center st">
+  <div id="srBox" class="resbox"></div>
+  <div class="card" style="width:100%;text-align:left"><div id="srAns"></div><div id="srBahas" class="bahas"></div></div>
+  <div class="hint">Soal berikutnya muncul otomatis.</div>
+</section>
+<section id="stEnd" class="screen center st"><div id="seBox" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:12px"></div></section>
+<section id="stMsg" class="screen center st">
+  <div class="bigmsg" id="smTitle"></div>
+  <div class="hint" id="smText"></div>
+  <button id="smBack" class="btn ghost">⌂ Beranda</button>
+</section>
+
+</main>
+<div id="netbar" class="netbar"></div>
+
+<script>
+window.BANK_SOAL = [
+  {topik:"Pancasila", q:"Dalam lambang negara Garuda Pancasila, sila ketiga dilambangkan dengan gambar ...", opsi:["Bintang","Rantai","Pohon beringin","Kepala banteng","Padi dan kapas"], kunci:2, bahas:"Lambang sila: 1 bintang, 2 rantai, 3 pohon beringin, 4 kepala banteng, 5 padi dan kapas (UU No. 24 Tahun 2009)."},
+  {topik:"Pancasila", q:"Rumusan Pancasila yang sah dan berlaku sebagai dasar negara tercantum dalam ...", opsi:["Piagam Jakarta 22 Juni 1945","Pidato Soekarno 1 Juni 1945","Batang tubuh UUD 1945 Pasal 1","Pembukaan UUD 1945 alinea keempat","Penjelasan UU No. 24 Tahun 2009"], kunci:3, bahas:"Rumusan final Pancasila ada di alinea keempat Pembukaan UUD 1945, disahkan PPKI 18 Agustus 1945."},
+  {topik:"Pancasila", q:"Seorang kepala desa membagikan bantuan sosial hanya kepada keluarga dan pendukungnya, padahal banyak warga miskin lain berhak. Tindakan ini paling bertentangan dengan sila ...", opsi:["Ketuhanan Yang Maha Esa","Persatuan Indonesia","Kerakyatan yang dipimpin oleh hikmat kebijaksanaan","Kemanusiaan yang adil dan beradab","Keadilan sosial bagi seluruh rakyat Indonesia"], kunci:4, bahas:"Pembagian bantuan yang pilih kasih mengabaikan keadilan sosial, yaitu perlakuan adil dan hak yang sama bagi seluruh rakyat (sila ke-5)."},
+  {topik:"Pancasila", q:"Hari Lahir Pancasila diperingati setiap tanggal ...", opsi:["1 Juni","17 Agustus","18 Agustus","22 Juni","28 Oktober"], kunci:0, bahas:"Berdasarkan pidato Soekarno di sidang BPUPKI 1 Juni 1945, tanggal tersebut ditetapkan sebagai Hari Lahir Pancasila (Keppres No. 24 Tahun 2016)."},
+  {topik:"Pancasila", q:"Sekelompok warga langsung menolong korban banjir tanpa menanyakan suku, agama, atau asal korban. Sikap ini mencerminkan pengamalan sila ...", opsi:["Ketuhanan Yang Maha Esa","Kemanusiaan yang adil dan beradab","Persatuan Indonesia","Kerakyatan yang dipimpin oleh hikmat kebijaksanaan","Keadilan sosial bagi seluruh rakyat Indonesia"], kunci:1, bahas:"Menolong sesama tanpa membeda-bedakan latar belakang adalah wujud pengakuan martabat manusia, nilai sila ke-2."},
+
+  {topik:"UUD 1945", q:"Pasal 1 ayat (3) UUD 1945 menyatakan bahwa Negara Indonesia adalah negara ...", opsi:["kekuasaan","hukum","agama","federal","monarki konstitusional"], kunci:1, bahas:"Pasal 1 ayat (3) UUD 1945 hasil perubahan ketiga: Negara Indonesia adalah negara hukum."},
+  {topik:"UUD 1945", q:"Menurut Pasal 1 ayat (2) UUD 1945, kedaulatan berada di tangan rakyat dan dilaksanakan menurut ...", opsi:["keputusan Presiden","ketetapan DPR","kehendak MPR sepenuhnya","Undang-Undang Dasar","putusan Mahkamah Agung"], kunci:3, bahas:"Pasal 1 ayat (2) hasil perubahan ketiga: kedaulatan di tangan rakyat dan dilaksanakan menurut Undang-Undang Dasar."},
+  {topik:"UUD 1945", q:"Jaminan kemerdekaan tiap penduduk untuk memeluk agama dan beribadat menurut agamanya tercantum dalam ...", opsi:["Pasal 29 ayat (2)","Pasal 27 ayat (1)","Pasal 30 ayat (1)","Pasal 31 ayat (1)","Pasal 33 ayat (1)"], kunci:0, bahas:"Pasal 29 ayat (2) UUD 1945 menjamin kemerdekaan memeluk agama dan beribadat menurut agama dan kepercayaannya."},
+  {topik:"UUD 1945", q:"UUD 1945 telah diamandemen sebanyak ... kali, yaitu pada tahun 1999 sampai 2002.", opsi:["2 kali (1999-2000)","3 kali (1999-2001)","3 kali (1999-2002)","5 kali (1999-2003)","4 kali (1999-2002)"], kunci:4, bahas:"Amandemen dilakukan empat kali oleh MPR: 1999, 2000, 2001, dan 2002."},
+  {topik:"UUD 1945", q:"Hak setiap warga negara untuk mendapatkan pendidikan diatur dalam ...", opsi:["Pasal 27 ayat (1)","Pasal 29 ayat (1)","Pasal 31 ayat (1)","Pasal 32 ayat (1)","Pasal 34 ayat (1)"], kunci:2, bahas:"Pasal 31 ayat (1) UUD 1945: setiap warga negara berhak mendapat pendidikan."},
+
+  {topik:"NKRI", q:"Pasal 1 ayat (1) UUD 1945 menyatakan Negara Indonesia ialah Negara Kesatuan yang berbentuk ...", opsi:["federasi","kerajaan","persemakmuran","serikat","republik"], kunci:4, bahas:"Pasal 1 ayat (1) UUD 1945: Negara Indonesia ialah Negara Kesatuan yang berbentuk Republik."},
+  {topik:"NKRI", q:"Menurut Pasal 18 ayat (1) UUD 1945, wilayah NKRI dibagi atas daerah ...", opsi:["negara bagian dan kabupaten","provinsi dan desa adat","provinsi, yang dibagi atas kabupaten dan kota","karesidenan dan kabupaten","kota dan kecamatan"], kunci:2, bahas:"Pasal 18 ayat (1): NKRI dibagi atas daerah provinsi, dan daerah provinsi itu dibagi atas kabupaten dan kota."},
+  {topik:"NKRI", q:"Deklarasi Djuanda 13 Desember 1957 menegaskan bahwa ...", opsi:["Irian Barat bagian dari Indonesia","laut di antara dan di sekitar pulau Indonesia merupakan satu kesatuan wilayah","Indonesia menganut sistem federal","wilayah laut Indonesia hanya 3 mil dari pantai","Indonesia keluar dari PBB"], kunci:1, bahas:"Deklarasi Djuanda menyatakan laut antarpulau sebagai bagian wilayah NKRI, dasar konsep negara kepulauan."},
+  {topik:"NKRI", q:"Ketentuan bahwa bentuk Negara Kesatuan Republik Indonesia tidak dapat diubah terdapat dalam ...", opsi:["Pasal 37 ayat (5)","Pasal 1 ayat (3)","Pasal 25A","Pasal 29 ayat (2)","Pasal 36A"], kunci:0, bahas:"Pasal 37 ayat (5) UUD 1945: khusus bentuk NKRI tidak dapat dilakukan perubahan."},
+  {topik:"NKRI", q:"Tokoh masyarakat di sebuah daerah menuntut memisahkan diri karena merasa pembangunan tertinggal. Sikap yang paling sesuai dengan prinsip NKRI adalah ...", opsi:["Mendukung referendum secara sepihak","Membiarkan karena urusan daerah","Memboikot seluruh program pemerintah pusat","Menyalurkan aspirasi lewat jalur konstitusional dan otonomi daerah","Mencari dukungan negara asing"], kunci:3, bahas:"Aspirasi disalurkan secara konstitusional dan melalui otonomi daerah, tanpa mengancam kesatuan negara."},
+
+  {topik:"Bhinneka Tunggal Ika", q:"Menurut Pasal 36A UUD 1945, lambang negara ialah Garuda Pancasila dengan semboyan ...", opsi:["Jalesveva Jayamahe","Tut Wuri Handayani","Rawe-rawe rantas malang-malang putung","Bhinneka Tunggal Ika","Gemah ripah loh jinawi"], kunci:3, bahas:"Pasal 36A UUD 1945: lambang negara ialah Garuda Pancasila dengan semboyan Bhinneka Tunggal Ika."},
+  {topik:"Bhinneka Tunggal Ika", q:"Semboyan Bhinneka Tunggal Ika dikutip dari Kitab Sutasoma karya ...", opsi:["Mpu Prapanca","Mpu Tantular","Mpu Sindok","Mpu Kanwa","Mpu Gandring"], kunci:1, bahas:"Frasa Bhinneka Tunggal Ika berasal dari Kitab Sutasoma karangan Mpu Tantular pada masa Majapahit."},
+  {topik:"Bhinneka Tunggal Ika", q:"Makna semboyan Bhinneka Tunggal Ika adalah ...", opsi:["berbeda-beda tetapi tetap satu jua","satu untuk semua, semua untuk satu","bersatu kita teguh bercerai kita runtuh","sama rata sama rasa","tidak ada perbedaan di antara bangsa"], kunci:0, bahas:"Bhinneka Tunggal Ika berarti berbeda-beda tetapi tetap satu jua, menegaskan persatuan dalam keberagaman."},
+  {topik:"Bhinneka Tunggal Ika", q:"Di sebuah kantor, dua kelompok pegawai dari suku berbeda saling mengejek hingga pekerjaan terganggu. Sebagai ASN yang bijak, sikap terbaik Anda adalah ...", opsi:["Memihak kelompok yang sesuku","Membiarkan hingga reda sendiri","Mengajak keduanya berdialog dan menekankan kesamaan tujuan kerja","Melaporkan seluruh pegawai kepada atasan","Menghindari kedua kelompok"], kunci:2, bahas:"Dialog dan penekanan tujuan bersama mencerminkan toleransi dan persatuan dalam keberagaman."},
+  {topik:"Bhinneka Tunggal Ika", q:"Negara memajukan kebudayaan nasional Indonesia di tengah peradaban dunia dengan menjamin kebebasan masyarakat memelihara dan mengembangkan nilai budayanya. Hal ini diatur dalam ...", opsi:["Pasal 27 ayat (3)","Pasal 30 ayat (1)","Pasal 1 ayat (3)","Pasal 36 UUD 1945","Pasal 32 ayat (1)"], kunci:4, bahas:"Pasal 32 ayat (1) UUD 1945: negara memajukan kebudayaan nasional Indonesia di tengah peradaban dunia."},
+
+  {topik:"Sejarah & Nasionalisme", q:"Kongres Pemuda II yang menghasilkan ikrar satu tanah air, satu bangsa, dan satu bahasa persatuan berlangsung pada ...", opsi:["28 Oktober 1928","20 Mei 1908","17 Agustus 1945","18 Agustus 1945","1 Juni 1945"], kunci:0, bahas:"Sumpah Pemuda diikrarkan pada 28 Oktober 1928 dalam Kongres Pemuda II."},
+  {topik:"Sejarah & Nasionalisme", q:"Hari Kebangkitan Nasional diperingati setiap 20 Mei untuk mengenang berdirinya organisasi ...", opsi:["Sarekat Islam","Indische Partij","Muhammadiyah","Taman Siswa","Budi Utomo"], kunci:4, bahas:"Budi Utomo berdiri 20 Mei 1908 dan dianggap tonggak awal pergerakan nasional."},
+  {topik:"Sejarah & Nasionalisme", q:"Salah satu hasil sidang PPKI pada 18 Agustus 1945 adalah ...", opsi:["menetapkan teks Proklamasi","membentuk BPUPKI","mengesahkan UUD 1945 serta memilih Presiden dan Wakil Presiden","menandatangani Piagam Jakarta","mengeluarkan Dekrit Presiden"], kunci:2, bahas:"PPKI 18 Agustus 1945 mengesahkan UUD 1945 dan memilih Soekarno-Hatta sebagai Presiden dan Wakil Presiden."},
+  {topik:"Sejarah & Nasionalisme", q:"Naskah rancangan pembukaan UUD yang dirumuskan Panitia Sembilan pada 22 Juni 1945 dikenal sebagai ...", opsi:["Teks Proklamasi","Dekrit Presiden","Supersemar","Piagam Jakarta","Deklarasi Djuanda"], kunci:3, bahas:"Panitia Sembilan merumuskan Piagam Jakarta pada 22 Juni 1945."},
+  {topik:"Sejarah & Nasionalisme", q:"Di era digital, cara yang paling tepat bagi generasi muda untuk menunjukkan nasionalisme adalah ...", opsi:["Mengenang perjuangan tanpa berbuat apa pun","Berprestasi, memakai produk dalam negeri, dan menyebarkan informasi benar","Menolak semua budaya asing","Membanggakan sejarah tanpa belajar","Mengkritik bangsa sendiri di media sosial"], kunci:1, bahas:"Nasionalisme masa kini diwujudkan lewat prestasi, cinta produk dalam negeri, dan sikap bijak bermedia."},
+
+  {topik:"Integritas", q:"Seorang ASN menerima hadiah dari rekanan terkait jabatannya dan hadiah itu tidak dapat ditolak. Ia wajib melaporkannya ke KPK paling lambat ...", opsi:["7 hari kerja","14 hari kerja","30 hari kerja","60 hari kerja","90 hari kerja"], kunci:2, bahas:"UU No. 20 Tahun 2001 mewajibkan pelaporan gratifikasi ke KPK paling lambat 30 hari kerja sejak diterima."},
+  {topik:"Integritas", q:"Anda anggota panitia pengadaan, lalu mengetahui kerabat dekat Anda ikut tender. Tindakan yang tepat adalah ...", opsi:["Mengungkapkan hal itu dan mengundurkan diri dari proses penilaian","Merahasiakannya dan menilai secara adil","Membantu kerabat secara diam-diam","Meminta kerabat mundur dari tender","Menyerahkan penilaian kepada bawahan"], kunci:0, bahas:"Benturan kepentingan harus diungkapkan dan ditangani dengan mundur dari proses agar keputusan objektif."},
+  {topik:"Integritas", q:"Atasan meminta Anda menggelembungkan laporan biaya perjalanan dinas. Sikap yang tepat adalah ...", opsi:["Menuruti agar hubungan baik terjaga","Menuruti asalkan selisihnya kecil","Berpura-pura tidak mendengar","Menolak dengan santun dan melapor lewat mekanisme pelaporan pelanggaran","Mengunggah masalah itu di media sosial"], kunci:3, bahas:"Integritas menuntut menolak perintah yang melanggar aturan dan menempuh jalur pelaporan resmi."},
+  {topik:"Integritas", q:"Seorang pemohon menawarkan uang terima kasih agar berkasnya diproses lebih cepat. Sebagai petugas layanan, Anda sebaiknya ...", opsi:["Menerima sambil memprosesnya sesuai urutan","Menolak dan menjelaskan prosedur serta waktu layanan yang berlaku","Menerima lalu menyumbangkannya","Meminta pemohon menaruh uang di meja","Memprioritaskan berkas itu tanpa menerima uang"], kunci:1, bahas:"Menerima imbalan di luar ketentuan adalah pungutan liar; petugas wajib menolak dan melayani sesuai prosedur."},
+  {topik:"Integritas", q:"Integritas dalam kehidupan ASN dapat diartikan sebagai ...", opsi:["kemampuan menyenangkan atasan","kepatuhan pada perintah apa pun","kecerdasan menyelesaikan tugas cepat","keberanian mengambil risiko besar","konsistensi antara ucapan dan perbuatan berdasarkan nilai dan aturan"], kunci:4, bahas:"Integritas adalah keselarasan pikiran, ucapan, dan tindakan dengan nilai moral dan peraturan."},
+
+  {topik:"Bela Negara", q:"Pasal 30 ayat (1) UUD 1945 menyatakan bahwa tiap-tiap warga negara berhak dan wajib ikut serta dalam ...", opsi:["pembangunan ekonomi nasional","usaha pertahanan dan keamanan negara","pemilihan umum","pengelolaan sumber daya alam","penyelenggaraan pendidikan"], kunci:1, bahas:"Pasal 30 ayat (1): hak dan kewajiban warga negara ikut serta dalam usaha pertahanan dan keamanan negara."},
+  {topik:"Bela Negara", q:"Hari Bela Negara diperingati setiap tanggal ...", opsi:["10 November","1 Oktober","17 Agustus","5 Oktober","19 Desember"], kunci:4, bahas:"Hari Bela Negara 19 Desember mengenang pembentukan PDRI tahun 1948 (Keppres No. 28 Tahun 2006)."},
+  {topik:"Bela Negara", q:"Menurut Pasal 30 ayat (2) UUD 1945, usaha pertahanan dan keamanan negara dilaksanakan melalui sistem ...", opsi:["pertahanan militer profesional","keamanan lingkungan terpadu","pertahanan berbasis aliansi","pertahanan dan keamanan rakyat semesta","wajib militer nasional"], kunci:3, bahas:"Pasal 30 ayat (2): sistem pertahanan dan keamanan rakyat semesta, dengan TNI dan Polri sebagai kekuatan utama dan rakyat sebagai pendukung."},
+  {topik:"Bela Negara", q:"Beredar kabar bohong yang memecah belah antar kelompok masyarakat di grup percakapan Anda. Wujud bela negara nonmiliter yang tepat adalah ...", opsi:["Meneruskan agar orang lain waspada","Diam saja karena bukan urusan Anda","Memeriksa kebenarannya, tidak menyebarkannya, dan meluruskan informasi","Membalas dengan kabar bohong lain","Keluar dari grup tanpa tindakan apa pun"], kunci:2, bahas:"Bela negara tidak hanya militer; menangkal hoaks dan menjaga persatuan juga bentuk bela negara."},
+  {topik:"Bela Negara", q:"Hak dan kewajiban warga negara untuk ikut serta dalam upaya pembelaan negara diatur dalam ...", opsi:["Pasal 27 ayat (3) UUD 1945","Pasal 27 ayat (1) UUD 1945","Pasal 31 ayat (1) UUD 1945","Pasal 36A UUD 1945","Pasal 37 ayat (5) UUD 1945"], kunci:0, bahas:"Pasal 27 ayat (3) UUD 1945: setiap warga negara berhak dan wajib ikut serta dalam upaya pembelaan negara."},
+
+  {topik:"Bahasa Negara", q:"Menurut Pasal 36 UUD 1945, bahasa negara ialah ...", opsi:["bahasa Indonesia","bahasa Melayu","bahasa Jawa","bahasa Inggris","bahasa daerah masing-masing"], kunci:0, bahas:"Pasal 36 UUD 1945: bahasa negara ialah bahasa Indonesia."},
+  {topik:"Bahasa Negara", q:"Undang-undang yang mengatur bahasa negara bersama bendera, lambang negara, dan lagu kebangsaan adalah ...", opsi:["UU No. 3 Tahun 2002","UU No. 20 Tahun 2001","UU No. 24 Tahun 2009","UU No. 5 Tahun 2014","UU No. 23 Tahun 2019"], kunci:2, bahas:"UU No. 24 Tahun 2009 tentang Bendera, Bahasa, dan Lambang Negara, serta Lagu Kebangsaan."},
+  {topik:"Bahasa Negara", q:"Seorang ASN menyusun surat dinas dengan banyak istilah asing padahal ada padanannya dalam bahasa Indonesia. Berdasarkan UU No. 24 Tahun 2009, tindakan itu ...", opsi:["boleh karena lebih modern","boleh jika atasan setuju","boleh untuk instansi besar","hanya salah jika surat dikirim ke luar negeri","kurang tepat karena bahasa Indonesia wajib dipakai dalam dokumen resmi negara"], kunci:4, bahas:"UU No. 24 Tahun 2009 mewajibkan penggunaan bahasa Indonesia dalam dokumen resmi negara."},
+  {topik:"Bahasa Negara", q:"Kedudukan bahasa Indonesia sebagai bahasa persatuan pertama kali ditegaskan dalam ...", opsi:["Proklamasi Kemerdekaan 1945","Sumpah Pemuda 1928","Konferensi Asia-Afrika 1955","Kongres Budi Utomo 1908","Dekrit Presiden 1959"], kunci:1, bahas:"Butir ketiga Sumpah Pemuda 1928: menjunjung bahasa persatuan, bahasa Indonesia."},
+  {topik:"Bahasa Negara", q:"Salah satu fungsi bahasa Indonesia sebagai bahasa negara adalah ...", opsi:["bahasa ibu di seluruh daerah","pelestari bahasa daerah","bahasa pengantar khusus di keluarga","bahasa resmi kenegaraan dan pengantar resmi di lembaga pendidikan","bahasa khusus untuk karya sastra"], kunci:3, bahas:"Sebagai bahasa negara, bahasa Indonesia dipakai dalam urusan resmi kenegaraan dan sebagai pengantar resmi pendidikan."}
+];
+
+</script>
+<script>
+(function(){
+"use strict";
+const FALLBACK=[
+ {topik:"Pancasila",q:"Pancasila sebagai dasar negara tercantum dalam ...",opsi:["Batang tubuh UUD 1945","Pembukaan UUD 1945 alinea keempat","Penjelasan UUD 1945","Tap MPR","UU No. 12 Tahun 2011"],kunci:1,bahas:"Rumusan Pancasila tercantum dalam Pembukaan UUD 1945 alinea keempat."},
+ {topik:"UUD 1945",q:"Negara Indonesia adalah negara hukum. Ketentuan ini terdapat dalam ...",opsi:["Pasal 1 ayat (1)","Pasal 1 ayat (2)","Pasal 1 ayat (3)","Pasal 2 ayat (1)","Pasal 3 ayat (1)"],kunci:2,bahas:"Pasal 1 ayat (3) UUD NRI 1945."},
+ {topik:"Bahasa Negara",q:"Bahasa negara ialah Bahasa Indonesia diatur dalam UUD 1945 pasal ...",opsi:["Pasal 32","Pasal 35","Pasal 36","Pasal 36A","Pasal 36B"],kunci:2,bahas:"Pasal 36 UUD NRI 1945."}
+];
+const BUILTIN=(Array.isArray(window.BANK_SOAL)&&window.BANK_SOAL.length)?window.BANK_SOAL:FALLBACK;
+let BANK=BUILTIN,TOPICS=[];
+function calcTopics(){TOPICS=[...new Set(BANK.map(q=>q.topik))]}
+const AVATARS=[["🦁","#fbbf24"],["🐯","#fb923c"],["🦊","#f97316"],["🐼","#94a3b8"],["🐸","#4ade80"],["🐵","#d6a46b"],["🦉","#a78bfa"],["🐧","#38bdf8"],["🐨","#a8a29e"],["🦄","#f9a8d4"],["🐙","#fb7185"],["🐲","#34d399"],["🦅","#f59e0b"],["🐢","#86efac"],["🐬","#7dd3fc"],["🐝","#fde047"]];
+const OPT_COL=["var(--o0)","var(--o1)","var(--o2)","var(--o3)","var(--o4)"];
+const OPT_SH=["A","B","C","D","E"];
+const DEF_PUN=[
+ "Nyanyikan satu bait lagu nasional",
+ "Bacakan teks Pancasila dengan lantang",
+ "Sebutkan 5 pasal UUD 1945 dan isinya",
+ "Jelaskan satu soal yang salah di depan kelas",
+ "PR: kerjakan 10 soal TWK tambahan",
+ "Squat 10 kali sambil sebut sila-sila",
+ "Rangkum topik terlemah (1 halaman)",
+ "Buat 2 bait pantun kebangsaan",
+ "Sebutkan 3 tanggal peristiwa sejarah",
+ "Jadi asisten tutor di sesi berikutnya"
+];
+const RING_C=2*Math.PI*44;
+
+const store={
+  get(k,d){try{const v=localStorage.getItem("arenatwk_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem("arenatwk_"+k,JSON.stringify(v))}catch(e){}}
+};
+let SRC=store.get("bank",null);
+if(SRC&&Array.isArray(SRC.items)&&SRC.items.length)BANK=SRC.items;else SRC={type:"builtin"};
+calcTopics();
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const avHTML=(i,cls="miniav")=>`<span class="${cls}" style="background:${AVATARS[i][1]}">${AVATARS[i][0]}</span>`;
+
+const S={
+  players:store.get("players",[]).filter(p=>p&&p.name&&AVATARS[p.av]),
+  set:Object.assign({n:15,t:20,pg:65,sound:true,bahas:true,topics:TOPICS},store.get("settings",{})),
+  qs:[],cur:0,qi:0,answered:true,raf:0,tStart:0,selAv:0,ranked:[],punSel:null,wheelRot:0,spinning:false
+};
+S.set.topics=S.set.topics.filter(t=>TOPICS.includes(t));
+if(!S.set.topics.length)S.set.topics=TOPICS.slice();
+
+/* ---------- sound ---------- */
+let AC=null;
+function tone(f,d,type="sine",v=.14,when=0){
+  if(!S.set.sound)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const t=AC.currentTime+when,o=AC.createOscillator(),g=AC.createGain();
+    o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d+.02);
+  }catch(e){}
+}
+const SFX={
+  tick:()=>tone(900,.07,"square",.05),
+  count:()=>tone(520,.15,"triangle",.15),
+  go:()=>{tone(784,.12,"triangle");tone(1046,.25,"triangle",.15,.1)},
+  ok:()=>{tone(523,.12);tone(659,.12,"sine",.14,.09);tone(784,.3,"sine",.14,.18)},
+  bad:()=>{tone(220,.18,"sawtooth",.1);tone(165,.35,"sawtooth",.1,.15)},
+  fan:()=>[523,659,784,1046,784,1046].forEach((f,i)=>tone(f,.28,"triangle",.13,i*.14)),
+  sad:()=>[392,349,330,262].forEach((f,i)=>tone(f,.35,"triangle",.12,i*.22)),
+  click:()=>tone(1200,.03,"square",.04)
+};
+
+/* ---------- background + logo ---------- */
+(function deco(){
+  const bg=$("#bg"),cols=["#facc15","#22d3ee","#f472b6","#a3e635","#fb923c"];
+  for(let i=0;i<14;i++){
+    const s=document.createElement("span"),z=30+Math.random()*90;
+    s.style.cssText=`left:${Math.random()*100}%;width:${z}px;height:${z}px;background:${cols[i%5]};animation-duration:${14+Math.random()*16}s;animation-delay:${-Math.random()*20}s`;
+    bg.appendChild(s);
+  }
+  const lg=$("#logo");lg.innerHTML=[...lg.textContent].map((c,i)=>c===" "?"&nbsp;":`<span style="animation-delay:${i*.09}s;color:${cols[i%5]}">${c}</span>`).join("");
+})();
+
+/* ---------- home ---------- */
+function show(id){
+  document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
+  $("#"+id).classList.add("active");window.scrollTo(0,0);
+}
+function renderAvatars(){
+  const used=new Set(S.players.map(p=>p.av));
+  $("#avgrid").innerHTML=AVATARS.map((a,i)=>`<button class="av${i===S.selAv?" sel":""}" data-i="${i}" style="background:${a[1]};${used.has(i)&&i!==S.selAv?"opacity:.45":""}" title="Karakter ${i+1}">${a[0]}</button>`).join("");
+}
+function renderPlayers(){
+  $("#plist").innerHTML=S.players.length?S.players.map((p,i)=>`<span class="pchip">${avHTML(p.av)}<b>${esc(p.name)}</b><button data-rm="${i}" title="Hapus">✕</button></span>`).join(""):`<span class="hint">Belum ada peserta.</span>`;
+  $("#startBtn").textContent=S.players.length?`Mulai Kuis (${S.players.length} peserta) ▶`:"Mulai Kuis ▶";
+  store.set("players",S.players.map(p=>({name:p.name,av:p.av})));
+  renderAvatars();
+}
+function pool(){return BANK.filter(q=>S.set.topics.includes(q.topik))}
+function pgScaled(n){return Math.round(S.set.pg/150*n*5)}
+function renderSettings(){
+  $("#topics").innerHTML=TOPICS.map(t=>`<button class="tchip${S.set.topics.includes(t)?" on":""}" data-t="${esc(t)}">${esc(t)}</button>`).join("");
+  const max=pool().length;
+  const opts=[5,10,15,20,30,40,50].filter(v=>v<max);
+  opts.push(max);
+  if(!opts.includes(S.set.n))S.set.n=Math.min(S.set.n,max);
+  if(!opts.includes(S.set.n))opts.push(S.set.n),opts.sort((a,b)=>a-b);
+  $("#sn").innerHTML=opts.map(v=>`<option value="${v}"${v===S.set.n?" selected":""}>${v} soal${v===max?" (semua)":""}</option>`).join("");
+  $("#st").value=String(S.set.t);$("#spg").value=S.set.pg;$("#ssound").checked=S.set.sound;$("#sbahas").checked=S.set.bahas;
+  updatePgHint();
+}
+function updatePgHint(){
+  const n=S.set.n;
+  $("#pghint").innerHTML=`Benar = 5, salah/kosong = 0 (seperti SKD). Untuk ${n} soal, nilai maks ${n*5} dan batas lulus <b>${pgScaled(n)}</b> (setara ${S.set.pg}/150).`;
+}
+function saveSettings(){store.set("settings",S.set)}
+function addPlayer(){
+  const inp=$("#pname"),name=inp.value.trim();
+  if(!name){inp.classList.remove("shake");void inp.offsetWidth;inp.classList.add("shake");inp.focus();return}
+  if(S.players.some(p=>p.name.toLowerCase()===name.toLowerCase())){alert("Nama sudah dipakai.");return}
+  S.players.push({name,av:S.selAv});SFX.go();
+  inp.value="";
+  const used=new Set(S.players.map(p=>p.av));
+  const free=AVATARS.findIndex((_,i)=>!used.has(i));if(free>=0)S.selAv=free;
+  renderPlayers();inp.focus();
+}
+$("#avgrid").addEventListener("click",e=>{const b=e.target.closest(".av");if(!b)return;S.selAv=+b.dataset.i;SFX.click();renderAvatars()});
+$("#addp").onclick=addPlayer;
+$("#pname").addEventListener("keydown",e=>{if(e.key==="Enter")addPlayer()});
+$("#plist").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(!b)return;S.players.splice(+b.dataset.rm,1);renderPlayers()});
+$("#topics").addEventListener("click",e=>{
+  const b=e.target.closest(".tchip");if(!b)return;const t=b.dataset.t;
+  if(S.set.topics.includes(t)){if(S.set.topics.length===1)return;S.set.topics=S.set.topics.filter(x=>x!==t)}else S.set.topics.push(t);
+  saveSettings();renderSettings();
+});
+$("#sn").onchange=e=>{S.set.n=+e.target.value;saveSettings();updatePgHint()};
+$("#st").onchange=e=>{S.set.t=+e.target.value;saveSettings()};
+$("#spg").oninput=e=>{S.set.pg=Math.max(0,Math.min(150,+e.target.value||0));saveSettings();updatePgHint()};
+$("#ssound").onchange=e=>{S.set.sound=e.target.checked;saveSettings()};
+$("#sbahas").onchange=e=>{S.set.bahas=e.target.checked;saveSettings()};
+$("#startBtn").onclick=startGame;
+
+/* ---------- game flow ---------- */
+function startGame(){
+  if(!S.players.length){const b=$("#startBtn");b.classList.remove("shake");void b.offsetWidth;b.classList.add("shake");$("#pname").focus();return}
+  const n=Math.min(S.set.n,pool().length);
+  S.qs=shuffle(pool()).slice(0,n);
+  S.players.forEach(p=>Object.assign(p,{points:0,benar:0,salah:0,kosong:0,streak:0,maxStreak:0,log:[],punish:null}));
+  S.cur=0;showTurn();
+}
+function showTurn(){
+  const p=S.players[S.cur];
+  const t=$("#turnav");t.style.background=AVATARS[p.av][1];t.textContent=AVATARS[p.av][0];
+  $("#turnname").textContent=p.name;
+  $("#turnmeta").textContent=`Peserta ${S.cur+1} dari ${S.players.length} · ${S.qs.length} soal · ${S.set.t} detik per soal`;
+  $("#readyBtn").style.display="";$("#countdown").textContent="";
+  show("turn");
+}
+$("#readyBtn").onclick=()=>{
+  $("#readyBtn").style.display="none";
+  const cd=$("#countdown");let n=3;
+  const step=()=>{
+    cd.classList.remove("tick");void cd.offsetWidth;cd.classList.add("tick");
+    if(n>0){cd.textContent=n;SFX.count();n--;setTimeout(step,750)}
+    else{cd.textContent="Mulai!";SFX.go();setTimeout(startPlayer,600)}
+  };step();
+};
+function startPlayer(){
+  const p=S.players[S.cur];
+  $("#qav").outerHTML=`<span id="qav" class="miniav" style="background:${AVATARS[p.av][1]}">${AVATARS[p.av][0]}</span>`;
+  $("#qname").textContent=p.name;
+  S.qi=0;updateHud();show("quiz");showQ();
+}
+function updateHud(){
+  const p=S.players[S.cur];
+  $("#qok").textContent=p.benar;$("#qbad").textContent=p.salah+p.kosong;
+  const st=$("#qstreak");
+  st.textContent=p.streak>=2?`🔥 ${p.streak}x beruntun`:"";
+  if(p.streak>=2){st.classList.remove("pulse");void st.offsetWidth;st.classList.add("pulse")}
+}
+function setProgress(done){
+  $("#progbar").style.width=(done/S.qs.length*100)+"%";
+  $("#progtxt").textContent=`Soal ${Math.min(S.qi+1,S.qs.length)} / ${S.qs.length}`;
+}
+function showQ(){
+  const q=S.qs[S.qi];
+  setProgress(S.qi);
+  $("#qtopic").textContent=q.topik;$("#qtext").textContent=q.q;
+  const c=$("#qcard");c.classList.remove("enter");void c.offsetWidth;c.classList.add("enter");
+  $("#opts").innerHTML=q.opsi.map((o,i)=>`<button class="opt" data-i="${i}" style="background:${OPT_COL[i]};animation-delay:${.15+i*.07}s"><span class="sh"><span>${OPT_SH[i]}</span></span><span>${esc(o)}</span></button>`).join("");
+  $("#fb").className="fb";
+  startTimer();
+}
+function startTimer(){
+  const T=S.set.t*1000,ring=$("#ring"),tm=$("#timer");
+  tm.className="timer";ring.style.strokeDashoffset=0;$("#tnum").textContent=S.set.t;
+  S.answered=false;S.tStart=performance.now();let last=null;
+  const loop=now=>{
+    if(S.answered)return;
+    const left=Math.max(0,T-(now-S.tStart)),sec=Math.ceil(left/1000);
+    ring.style.strokeDashoffset=RING_C*(1-left/T);
+    if(sec!==last){
+      last=sec;$("#tnum").textContent=sec;
+      tm.classList.toggle("warn",left/T<.5);tm.classList.toggle("hurry",sec<=5);
+      if(sec<=5&&sec>0)SFX.tick();
+    }
+    if(left<=0){answer(-1);return}
+    S.raf=requestAnimationFrame(loop);
+  };
+  S.raf=requestAnimationFrame(loop);
+}
+function animateNum(el,from,to,ms=700){
+  const t0=performance.now();
+  const f=now=>{const k=Math.min(1,(now-t0)/ms),e=1-Math.pow(1-k,3);el.textContent=Math.round(from+(to-from)*e).toLocaleString("id-ID");if(k<1)requestAnimationFrame(f)};
+  requestAnimationFrame(f);
+}
+function answer(i){
+  if(S.answered)return;S.answered=true;cancelAnimationFrame(S.raf);
+  const q=S.qs[S.qi],p=S.players[S.cur],T=S.set.t*1000,el=Math.min(performance.now()-S.tStart,T);
+  const ok=i===q.kunci;let gain=0,bonus=0;
+  if(ok){
+    p.streak++;p.maxStreak=Math.max(p.maxStreak,p.streak);p.benar++;
+    gain=Math.round(1000*(1-.5*el/T));bonus=Math.min(p.streak-1,5)*100;
+    const from=p.points;p.points+=gain+bonus;animateNum($("#qscore"),from,p.points);
+    const pop=document.createElement("span");pop.className="gainpop";pop.textContent="+"+(gain+bonus);$("#scorebox").appendChild(pop);setTimeout(()=>pop.remove(),1300);
+    SFX.ok();
+  }else{
+    p.streak=0;if(i<0)p.kosong++;else p.salah++;SFX.bad();
+  }
+  p.log.push({topik:q.topik,ok,jawab:i,ms:Math.round(el)});
+  document.querySelectorAll(".opt").forEach((b,j)=>{
+    b.disabled=true;
+    if(j===q.kunci)b.classList.add("correct");else if(j===i)b.classList.add("wrong");else b.classList.add("dim");
+  });
+  setProgress(S.qi+1);updateHud();
+  const fb=$("#fb");
+  fb.className="fb show "+(ok?"ok":"no");
+  $("#fbtitle").textContent=ok?(p.streak>=3?"Mantap! Beruntun 🔥":"Benar! 🎉"):(i<0?"Waktu habis ⏰":"Belum tepat 😅");
+  $("#fbgain").textContent=ok?`+${gain}${bonus?` (+${bonus} bonus beruntun)`:""}`:"+0";
+  $("#fbans").innerHTML=`Jawaban benar: <b>${OPT_SH[q.kunci]}. ${esc(q.opsi[q.kunci])}</b>`;
+  $("#fbbahas").textContent=S.set.bahas&&q.bahas?q.bahas:"";
+  $("#fbbahas").style.display=S.set.bahas&&q.bahas?"":"none";
+  $("#nextBtn").textContent=S.qi+1>=S.qs.length?"Lihat hasil ▶":"Lanjut ▶";
+  setTimeout(()=>$("#nextBtn").focus({preventScroll:true}),50);
+  fb.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+$("#opts").addEventListener("click",e=>{const b=e.target.closest(".opt");if(b&&!b.disabled)answer(+b.dataset.i)});
+$("#nextBtn").onclick=next;
+function next(){
+  if(!S.answered)return;
+  S.qi++;
+  if(S.qi>=S.qs.length)showSummary();else{showQ();window.scrollTo({top:0,behavior:"smooth"})}
+}
+document.addEventListener("keydown",e=>{
+  if(!$("#quiz").classList.contains("active"))return;
+  if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
+  const k=e.key.toLowerCase(),map={"1":0,"2":1,"3":2,"4":3,"5":4,a:0,b:1,c:2,d:3,e:4};
+  if(!S.answered&&k in map&&map[k]<S.qs[S.qi].opsi.length){answer(map[k]);e.preventDefault()}
+  else if(S.answered&&(e.key==="Enter"||e.key===" ")){next();e.preventDefault()}
+});
+$("#quitBtn").onclick=()=>{
+  if(!confirm("Akhiri sesi sekarang? Hasil peserta yang sudah selesai tetap masuk peringkat."))return;
+  S.answered=true;cancelAnimationFrame(S.raf);
+  const done=S.players.slice(0,S.cur);
+  if(done.length){S.players=done.concat(S.players.slice(S.cur).map(p=>Object.assign(p,{skip:true})));showRank()}
+  else show("home");
+};
+
+/* ---------- per-player summary ---------- */
+function topicStats(p){
+  const m={};p.log.forEach(l=>{(m[l.topik]=m[l.topik]||{n:0,ok:0}).n++;if(l.ok)m[l.topik].ok++});
+  return Object.entries(m).map(([t,v])=>({t,n:v.n,ok:v.ok,r:v.ok/v.n})).sort((a,b)=>a.r-b.r);
+}
+function nilai(p){return p.benar*5}
+function lulus(p){return nilai(p)>=pgScaled(S.qs.length)}
+function showSummary(){
+  const p=S.players[S.cur],n=S.qs.length,pass=lulus(p);
+  $("#sumav").style.background=AVATARS[p.av][1];$("#sumav").textContent=AVATARS[p.av][0];
+  $("#sumname").textContent=p.name;
+  const bd=$("#sumbadge");bd.className="badge "+(pass?"pass":"fail");bd.textContent=pass?"LULUS PG ✔":"BELUM LULUS";
+  show("sum");
+  animateNum($("#sumpts"),0,p.points,900);
+  $("#sumok").textContent=p.benar;$("#sumbad").textContent=p.salah+p.kosong;
+  $("#sumnil").textContent=nilai(p);
+  $("#sumpg").innerHTML=`Nilai ${nilai(p)} dari ${n*5} · passing grade ${pgScaled(n)} · kosong/waktu habis: ${p.kosong} · rekor beruntun: ${p.maxStreak}`;
+  const ts=topicStats(p);
+  $("#sumtopics").innerHTML=ts.map(x=>{const pct=Math.round(x.r*100),col=pct>=70?"#22c55e":pct>=40?"#f59e0b":"#ef4444";
+    return `<div class="tbar"><span>${esc(x.t)}</span><div class="tr"><div style="background:${col}" data-w="${pct}"></div></div><b>${x.ok}/${x.n}</b></div>`}).join("");
+  requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelectorAll("#sumtopics .tr div").forEach(d=>d.style.width=d.dataset.w+"%")));
+  const last=S.cur+1>=S.players.length;
+  $("#sumNext").textContent=last?"🏆 Lihat Peringkat":`Lanjut: ${S.players[S.cur+1].name} ▶`;
+  if(pass){SFX.fan();confetti(1800)}else SFX.sad();
+}
+$("#sumNext").onclick=()=>{S.cur++;if(S.cur<S.players.length)showTurn();else showRank()};
+
+/* ---------- ranking ---------- */
+function showRank(){
+  S.ranked=(OL.role==="host"?[...OL.players.values()]:S.players.filter(p=>!p.skip)).slice().sort((a,b)=>b.points-a.points||b.benar-a.benar||a.name.localeCompare(b.name));
+  const r=S.ranked,order=[1,0,2];
+  $("#podium").innerHTML=order.map((idx,k)=>{
+    const p=r[idx];if(!p)return "";
+    return `<div class="pod p${idx+1}">${idx===0?'<div class="crown">👑</div>':""}<span class="miniav" style="background:${AVATARS[p.av][1]};animation-delay:${.6+k*.25}s">${AVATARS[p.av][0]}</span>
+      <div class="nm">${esc(p.name)}</div><div class="pt">${p.points.toLocaleString("id-ID")} poin</div>
+      <div class="bar" style="animation-delay:${k*.2}s">${idx+1}</div></div>`;
+  }).join("");
+  const pg=pgScaled(S.qs.length);
+  $("#ranktbl").innerHTML=r.map((p,i)=>{
+    const w=topicStats(p)[0];
+    return `<tr style="animation-delay:${.8+i*.08}s"><td><b>${i+1}</b></td><td style="display:flex;align-items:center;gap:8px">${avHTML(p.av)}${esc(p.name)}</td>
+      <td><b>${p.points.toLocaleString("id-ID")}</b></td><td>${p.benar}</td><td>${p.salah+p.kosong}</td><td>${nilai(p)}</td>
+      <td class="${lulus(p)?"tag-pass":"tag-fail"}">${lulus(p)?"Lulus":"Belum"}</td><td>${w&&w.r<1?esc(w.t)+` (${w.ok}/${w.n})`:"–"}</td></tr>`;
+  }).join("");
+  const nFail=r.filter(p=>!lulus(p)).length;
+  $("#toPunish").textContent=nFail?`🎡 Roda Hukuman (${nFail} peserta)`:"🎡 Roda Hukuman";
+  show("rank");SFX.fan();setTimeout(()=>confetti(4000),700);
+  void pg;
+}
+$("#toPunish").onclick=showPunish;
+$("#againBtn").onclick=()=>{if(OL.role==="host"){hostAgain();return}S.players.forEach(p=>delete p.skip);startGame()};
+$("#homeBtn").onclick=()=>{
+  if(OL.role==="host"){if(!confirm("Tutup ruang online dan kembali ke beranda? Peserta akan melihat sesi selesai."))return;olClose(true)}
+  S.players.forEach(p=>delete p.skip);renderPlayers();renderSettings();show("home");
+};
+$("#csvBtn").onclick=()=>{
+  const pg=pgScaled(S.qs.length),rows=[["Peringkat","Nama","Poin","Benar","Salah","Kosong","Nilai","Passing grade","Status","Rekor beruntun","Topik terlemah","Hukuman"]];
+  S.ranked.forEach((p,i)=>{const w=topicStats(p)[0];rows.push([i+1,p.name,p.points,p.benar,p.salah,p.kosong,nilai(p),pg,lulus(p)?"Lulus":"Belum lulus",p.maxStreak,w&&w.r<1?w.t:"",p.punish||""])});
+  const csv="﻿"+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(";")).join("\r\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download=`hasil-arena-twk-${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+};
+
+/* ---------- punishment wheel ---------- */
+const WCOL=["#e21b3c","#1368ce","#d89e00","#26890c","#864cbf","#0891b2","#db2777","#ea580c","#4f46e5","#65a30d"];
+function punItems(){return $("#puntext").value.split("\n").map(s=>s.trim()).filter(Boolean)}
+function drawWheel(){
+  const cv=$("#wheel"),ctx=cv.getContext("2d"),W=cv.width,R=W/2-8,items=punItems(),n=Math.max(items.length,1),seg=2*Math.PI/n;
+  ctx.clearRect(0,0,W,W);ctx.save();ctx.translate(W/2,W/2);
+  for(let i=0;i<n;i++){
+    const a0=-Math.PI/2+i*seg;
+    ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,R,a0,a0+seg);ctx.closePath();
+    ctx.fillStyle=items.length?WCOL[i%WCOL.length]:"#ccc";ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=4;ctx.stroke();
+    if(!items.length)continue;
+    ctx.save();ctx.rotate(a0+seg/2);ctx.fillStyle="#fff";ctx.textAlign="right";ctx.textBaseline="middle";
+    const fs=Math.max(15,Math.min(26,300/n+8));ctx.font=`600 ${fs}px Fredoka, sans-serif`;
+    let t=items[i];const maxW=R-80;while(ctx.measureText(t).width>maxW&&t.length>4)t=t.slice(0,-2);if(t!==items[i])t=t.trim()+"…";
+    ctx.fillText(t,R-18,0);ctx.restore();
+  }
+  ctx.beginPath();ctx.arc(0,0,46,0,2*Math.PI);ctx.fillStyle="#fff";ctx.fill();
+  ctx.font="44px serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("⚖️",0,2);
+  ctx.restore();
+}
+function renderPunList(){
+  const fails=S.ranked.filter(p=>!lulus(p));
+  if(!fails.length){
+    $("#punlist").innerHTML=`<div class="hint">Semua peserta lulus passing grade 🎉 Roda tetap bisa diputar untuk iseng.</div>`;
+    $("#punhint").textContent="Tidak ada yang di bawah passing grade. Kelas hebat!";
+  }else{
+    $("#punhint").textContent=`${fails.length} peserta di bawah passing grade ${pgScaled(S.qs.length)}. Pilih peserta, lalu putar roda.`;
+    $("#punlist").innerHTML=fails.map(p=>{const i=S.ranked.indexOf(p);
+      return `<button class="pun${S.punSel===i?" sel":""}" data-i="${i}">${avHTML(p.av)}<span><b>${esc(p.name)}</b> <span class="hint">· nilai ${nilai(p)}</span><br><span class="pres">${p.punish?"⚖️ "+esc(p.punish):""}</span></span></button>`}).join("");
+  }
+  const sp=S.punSel!=null?S.ranked[S.punSel]:null;
+  $("#spinfor").textContent=sp?`Memutar untuk: ${sp.name}`:(fails.length?"Pilih peserta dulu":"Putar bebas");
+}
+function showPunish(){
+  const fails=S.ranked.filter(p=>!lulus(p));
+  S.punSel=fails.length?S.ranked.indexOf(fails.find(p=>!p.punish)||fails[0]):null;
+  $("#punres").textContent="";
+  renderPunList();show("punish");drawWheel();
+}
+$("#puntext").value=store.get("pun",DEF_PUN).join("\n");
+$("#puntext").addEventListener("input",()=>{store.set("pun",punItems());if(!S.spinning)drawWheel()});
+$("#punreset").onclick=()=>{$("#puntext").value=DEF_PUN.join("\n");store.set("pun",DEF_PUN);drawWheel()};
+$("#punlist").addEventListener("click",e=>{const b=e.target.closest(".pun");if(!b||S.spinning)return;S.punSel=+b.dataset.i;SFX.click();renderPunList()});
+$("#spinBtn").onclick=()=>{
+  const items=punItems();if(S.spinning||!items.length)return;
+  const fails=S.ranked.filter(p=>!lulus(p));
+  if(fails.length&&S.punSel==null){$("#spinfor").classList.add("shake");setTimeout(()=>$("#spinfor").classList.remove("shake"),400);return}
+  S.spinning=true;$("#spinBtn").disabled=true;$("#punres").textContent="";
+  S.wheelRot+=360*6+Math.random()*360;
+  const cv=$("#wheel");cv.style.transform=`rotate(${S.wheelRot}deg)`;
+  let tk=0;const tickIv=setInterval(()=>{tk++;SFX.click()},Math.max(60,120));
+  setTimeout(()=>clearInterval(tickIv),4200);
+  const done=()=>{
+    cv.removeEventListener("transitionend",done);clearInterval(tickIv);
+    const seg=360/items.length,a=((360-(S.wheelRot%360))%360),idx=Math.floor(a/seg)%items.length,res=items[idx];
+    const r=$("#punres");r.classList.remove("show");void r.offsetWidth;r.classList.add("show");
+    const sp=S.punSel!=null?S.ranked[S.punSel]:null;
+    r.innerHTML=sp?`${esc(sp.name)}:<br>${esc(res)}`:esc(res);
+    if(sp){sp.punish=res;const nxt=fails.find(p=>!p.punish);if(nxt)S.punSel=S.ranked.indexOf(nxt)}
+    SFX.fan();confetti(1500);renderPunList();hostPubEnd();
+    S.spinning=false;$("#spinBtn").disabled=false;
+  };
+  cv.addEventListener("transitionend",done);
+};
+$("#backRank").onclick=()=>show("rank");
+
+/* ---------- confetti ---------- */
+function confetti(ms){
+  const cv=$("#confetti"),ctx=cv.getContext("2d");
+  cv.width=innerWidth;cv.height=innerHeight;
+  const cols=["#facc15","#22d3ee","#f472b6","#a3e635","#fb923c","#ffffff","#a78bfa"];
+  const ps=Array.from({length:160},()=>({x:Math.random()*cv.width,y:-20-Math.random()*cv.height*.5,vx:(Math.random()-.5)*4,vy:2+Math.random()*4,s:5+Math.random()*7,r:Math.random()*6,vr:(Math.random()-.5)*.3,c:cols[Math.floor(Math.random()*cols.length)]}));
+  const t0=performance.now();
+  const f=now=>{
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.r+=p.vr;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);ctx.restore()});
+    if(now-t0<ms)requestAnimationFrame(f);else ctx.clearRect(0,0,cv.width,cv.height);
+  };
+  requestAnimationFrame(f);
+}
+
+/* ---------- question source (external sheets/docs/files) ---------- */
+const LETTERS="ABCDE";
+function parseCSV(text){
+  text=text.replace(/^﻿/,"");
+  const first=text.split("\n")[0]||"";
+  const cnt=d=>first.split(d).length;
+  const delim=cnt("\t")>cnt(",")&&cnt("\t")>cnt(";")?"\t":(cnt(";")>cnt(",")?";":",");
+  const rows=[];let row=[],f="",q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c==='"')q=true;
+    else if(c===delim){row.push(f);f=""}
+    else if(c==="\n"){row.push(f);rows.push(row);row=[];f=""}
+    else if(c!=="\r")f+=c;
+  }
+  if(f!==""||row.length){row.push(f);rows.push(row)}
+  return rows;
+}
+function parseKunci(v,opsi){
+  v=String(v==null?"":v).trim();if(!v)return -1;
+  const m=v.match(/^\(?([A-Ea-e])\)?[\.\)]?$/);if(m)return LETTERS.indexOf(m[1].toUpperCase());
+  if(/^[1-5]$/.test(v))return +v-1;
+  const m2=v.match(/^\(?([A-Ea-e])[\.\)]\s/);if(m2)return LETTERS.indexOf(m2[1].toUpperCase());
+  const i=opsi.findIndex(o=>o.trim().toLowerCase()===v.toLowerCase());return i;
+}
+function finalize(raw,label){
+  const q=String(raw.q||"").trim(),opsi=(raw.opsi||[]).map(o=>String(o==null?"":o).trim());
+  while(opsi.length&&!opsi[opsi.length-1])opsi.pop();
+  if(!q)return {err:`${label}: teks soal kosong`};
+  if(opsi.length<2)return {err:`${label}: minimal 2 opsi jawaban`};
+  if(opsi.some(o=>!o))return {err:`${label}: ada opsi kosong di tengah`};
+  if(opsi.length>5)return {err:`${label}: maksimal 5 opsi (A–E)`};
+  const k=typeof raw.kunci==="number"?raw.kunci:parseKunci(raw.kunci,opsi);
+  if(String(raw.kunci==null?"":raw.kunci).trim()===""&&typeof raw.kunci!=="number")return {err:`${label}: kunci belum diisi`};
+  if(!(k>=0&&k<opsi.length))return {err:`${label}: kunci "${raw.kunci==null?"":raw.kunci}" tidak valid`};
+  return {item:{topik:String(raw.topik||"").trim()||"Umum",q,opsi,kunci:k,bahas:String(raw.bahas||"").trim()}};
+}
+function rowsToItems(rows){
+  rows=rows.filter(r=>r&&r.some(c=>String(c==null?"":c).trim()!==""));
+  if(!rows.length)return {items:[],errs:["File kosong"]};
+  const H=rows[0].map(h=>String(h==null?"":h).trim().toLowerCase().replace(/[_\-]+/g," ").replace(/\s+/g," "));
+  const find=(...names)=>H.findIndex(h=>names.includes(h));
+  const col={topik:find("topik","topic","kategori","materi"),q:find("soal","pertanyaan","question","teks soal"),
+    kunci:find("kunci","kunci jawaban","jawaban benar","jawaban","answer","key"),bahas:find("pembahasan","penjelasan","bahas","explanation")};
+  const oc=[...LETTERS].map(L=>{const l=L.toLowerCase();return find(l,"opsi "+l,"pilihan "+l,"jawaban "+l,"option "+l)});
+  if(col.q<0)return {items:[],errs:['Kolom "soal" tidak ditemukan di baris pertama. Pakai judul kolom: topik, soal, a, b, c, d, e, kunci, pembahasan']};
+  if(oc[0]<0||oc[1]<0)return {items:[],errs:['Kolom opsi "a" dan "b" tidak ditemukan di baris pertama']};
+  if(col.kunci<0)return {items:[],errs:['Kolom "kunci" tidak ditemukan di baris pertama']};
+  const items=[],errs=[];
+  rows.slice(1).forEach((r,i)=>{
+    const g=c=>c<0?"":(r[c]==null?"":r[c]);
+    const res=finalize({topik:g(col.topik),q:g(col.q),opsi:oc.map(c=>c<0?"":g(c)),kunci:g(col.kunci),bahas:g(col.bahas)},`Baris ${i+2}`);
+    res.item?items.push(res.item):errs.push(res.err);
+  });
+  return {items,errs};
+}
+function parseTXT(text){
+  const lines=text.replace(/^﻿/,"").replace(/\r/g,"").split("\n");
+  const raws=[];let topik="Umum",cur=null,field=null,m;
+  for(const rawLine of lines){
+    const l=rawLine.replace(/ /g," ").trim();if(!l)continue;
+    if((m=l.match(/^#+\s*(.+)$/))||(m=l.match(/^topik\s*[:=]\s*(.+)$/i))){topik=m[1].trim();cur=null;field=null;continue}
+    if((m=l.match(/^(?:soal\s*(?:no\.?\s*)?)?(\d{1,3})\s*[\.\)]\s*(.+)$/i))){cur={topik,q:m[2],opsi:[],kunci:"",bahas:"",no:m[1]};raws.push(cur);field="q";continue}
+    if(!cur)continue;
+    if((m=l.match(/^(?:kunci(?:\s*jawaban)?|jawaban(?:\s*benar)?)\s*[:=]\s*(.+)$/i))){cur.kunci=m[1].trim();field=null;continue}
+    if((m=l.match(/^(?:pembahasan|penjelasan)\s*[:=]\s*(.*)$/i))){cur.bahas=m[1];field="bahas";continue}
+    if(field!=="bahas"&&(m=l.match(/^(\*?)\s*\(?([A-Ea-e])\s*[\.\)]\s*(\*?)\s*(.+?)\s*(\*?)$/))){
+      const idx=LETTERS.indexOf(m[2].toUpperCase());
+      if(idx===cur.opsi.length){cur.opsi.push(m[4]);if(m[1]||m[3]||m[5])cur.kunci=idx;field="opt";continue}
+    }
+    if(field==="q")cur.q+=" "+l;
+    else if(field==="opt")cur.opsi[cur.opsi.length-1]+=" "+l;
+    else if(field==="bahas")cur.bahas+=(cur.bahas?" ":"")+l;
+  }
+  const items=[],errs=[];
+  raws.forEach(r=>{const res=finalize(r,`Soal no. ${r.no}`);res.item?items.push(res.item):errs.push(res.err)});
+  if(!raws.length)errs.push('Tidak ada soal terbaca. Awali tiap soal dengan nomor, mis. "1. Teks soal", lalu opsi "A. ..." sampai "E. ...", lalu "Kunci: B"');
+  return {items,errs};
+}
+function parseJSON(text){
+  let data;try{data=JSON.parse(text.replace(/^﻿/,""))}catch(e){return {items:[],errs:["JSON tidak valid: "+e.message]}}
+  if(!Array.isArray(data))data=data.soal||data.questions||[];
+  const items=[],errs=[];
+  data.forEach((d,i)=>{
+    const opsi=Array.isArray(d.opsi)?d.opsi:[...LETTERS].map(L=>d[L.toLowerCase()]||d[L]||"");
+    const res=finalize({topik:d.topik,q:d.q||d.soal||d.pertanyaan,opsi,kunci:d.kunci!=null?d.kunci:d.jawaban,bahas:d.bahas||d.pembahasan},`Soal ke-${i+1}`);
+    res.item?items.push(res.item):errs.push(res.err);
+  });
+  return {items,errs};
+}
+function parseAuto(text){
+  const t=text.replace(/^﻿/,"").trim();
+  if(t.startsWith("[")||t.startsWith("{"))return parseJSON(t);
+  const head=(t.split("\n")[0]||"").toLowerCase();
+  if(/(^|[,;\t"])\s*(soal|pertanyaan|question)\s*("|[,;\t]|$)/.test(head))return rowsToItems(parseCSV(t));
+  return parseTXT(t);
+}
+const libCache={};
+function loadLib(url,globalName){
+  if(window[globalName])return Promise.resolve(window[globalName]);
+  if(!libCache[url])libCache[url]=new Promise((res,rej)=>{const s=document.createElement("script");s.src=url;s.onload=()=>res(window[globalName]);s.onerror=()=>{delete libCache[url];s.remove();rej(new Error("Gagal memuat komponen dari internet. Periksa koneksi lalu coba lagi."))};document.head.appendChild(s)});
+  return libCache[url];
+}
+async function parseFile(file){
+  const name=file.name.toLowerCase();
+  if(/\.(xlsx|xls|ods)$/.test(name)){
+    const X=await loadLib("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js","XLSX");
+    const wb=X.read(await file.arrayBuffer(),{type:"array"});
+    return rowsToItems(X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:"",raw:false}));
+  }
+  if(name.endsWith(".docx")){
+    const M=await loadLib("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js","mammoth");
+    const r=await M.extractRawText({arrayBuffer:await file.arrayBuffer()});
+    return parseTXT(r.value);
+  }
+  const text=await file.text();
+  if(name.endsWith(".json"))return parseJSON(text);
+  if(/\.(csv|tsv)$/.test(name))return rowsToItems(parseCSV(text));
+  return parseAuto(text);
+}
+function linkToFetchUrl(u){
+  u=u.trim();let m;
+  const gid=(u.match(/[#&?]gid=(\d+)/)||[])[1];
+  if((m=u.match(/docs\.google\.com\/spreadsheets\/d\/e\/([\w-]+)/)))return {url:`https://docs.google.com/spreadsheets/d/e/${m[1]}/pub?output=csv${gid?"&gid="+gid:""}`,kind:"Google Sheets"};
+  if((m=u.match(/docs\.google\.com\/spreadsheets\/d\/([\w-]+)/)))return {url:`https://docs.google.com/spreadsheets/d/${m[1]}/gviz/tq?tqx=out:csv${gid?"&gid="+gid:""}`,kind:"Google Sheets"};
+  if((m=u.match(/docs\.google\.com\/document\/d\/e\/([\w-]+)/)))return {url:`https://docs.google.com/document/d/e/${m[1]}/pub`,kind:"Google Docs",html:true};
+  if((m=u.match(/docs\.google\.com\/document\/d\/([\w-]+)/)))return {url:`https://docs.google.com/document/d/${m[1]}/export?format=txt`,kind:"Google Docs"};
+  if(/^https?:\/\//i.test(u))return {url:u,kind:"link"};
+  return null;
+}
+async function fetchLink(link){
+  const t=linkToFetchUrl(link);
+  if(!t)throw new Error("Link tidak dikenali. Pakai link Google Sheets, Google Docs, atau URL file CSV/TXT/JSON.");
+  let res;
+  try{res=await fetch(t.url,{cache:"no-store"})}
+  catch(e){throw new Error(t.kind==="Google Docs"?"Browser menolak memuat Google Docs langsung. Pilih File → Download → .docx di Google Docs, lalu unggah filenya. Atau pindahkan soal ke Google Sheets.":"Tidak bisa terhubung. Cek internet dan pastikan link dibagikan ke \"Siapa saja yang memiliki link\".")}
+  if(!res.ok)throw new Error(`Gagal memuat (${res.status}). Pastikan link dibagikan ke "Siapa saja yang memiliki link".`);
+  let text=await res.text();
+  if(/^\s*<!doctype html|^\s*<html/i.test(text)){
+    if(!t.html)throw new Error('Yang terbuka halaman login Google, bukan isi file. Ubah akses berbagi ke "Siapa saja yang memiliki link".');
+    const doc=new DOMParser().parseFromString(text,"text/html");
+    doc.querySelectorAll("p,li,h1,h2,h3,h4,h5,h6,br,div").forEach(e=>e.append("\n"));
+    text=(doc.querySelector("#contents")||doc.body).textContent;
+    return parseTXT(text);
+  }
+  return t.kind==="Google Sheets"?rowsToItems(parseCSV(text)):parseAuto(text);
+}
+function fmtTime(ts){try{return new Date(ts).toLocaleString("id-ID",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}catch(e){return ""}}
+function renderSource(){
+  const label=SRC.type==="link"?`${SRC.kind||"Link"}`:SRC.type==="file"?`file ${SRC.name}`:"soal bawaan aplikasi";
+  $("#srcStatus").innerHTML=`📚 <b>${BANK.length} soal</b> dari ${esc(label)}${SRC.at?` · dimuat ${esc(fmtTime(SRC.at))}`:""}${SRC.type==="link"?" · otomatis diperbarui saat aplikasi dibuka":""}`;
+  $("#srcRefresh").style.display=SRC.type==="link"?"":"none";
+  if(SRC.type==="link"&&!$("#srcUrl").value)$("#srcUrl").value=SRC.link||"";
+  $("#srcCount").textContent=BANK.length+" soal";
+  $("#srcList").innerHTML=BANK.map((q,i)=>`<div class="it"><b>${i+1}.</b> <span class="chip" style="margin:0 4px 0 0;font-size:12px">${esc(q.topik)}</span>${esc(q.q)}<br><span class="k">✔ ${LETTERS[q.kunci]}. ${esc(q.opsi[q.kunci])}</span> <span class="hint">· ${q.opsi.length} opsi</span></div>`).join("");
+}
+function srcMsg(html){$("#srcMsg").innerHTML=html}
+function reportResult(r,from){
+  const e=r.errs.length?`<div class="err">⚠ ${r.errs.length} bagian dilewati:</div><ul>${r.errs.slice(0,12).map(x=>`<li>${esc(x)}</li>`).join("")}${r.errs.length>12?`<li>…dan ${r.errs.length-12} lainnya</li>`:""}</ul>`:"";
+  srcMsg((r.items.length?`<div class="ok">✔ ${r.items.length} soal berhasil dimuat dari ${esc(from)}.</div>`:`<div class="err">✖ Tidak ada soal yang bisa dimuat dari ${esc(from)}. Soal lama tetap dipakai.</div>`)+e);
+}
+function applyBank(items,src){
+  BANK=items;SRC=Object.assign(src,{at:Date.now()});
+  store.set("bank",Object.assign({},SRC,{items}));
+  calcTopics();S.set.topics=TOPICS.slice();
+  S.set.n=Math.min(Math.max(S.set.n,15),BANK.length);saveSettings();
+  renderSettings();renderSource();
+}
+async function loadFromLink(link,silent){
+  const btn=$("#srcLoad");btn.disabled=true;btn.textContent="Memuat…";
+  if(!silent)srcMsg("Memuat soal…");
+  try{
+    const r=await fetchLink(link),t=linkToFetchUrl(link);
+    if(r.items.length)applyBank(r.items,{type:"link",link,kind:t.kind});
+    if(!silent||r.errs.length)reportResult(r,t.kind);
+  }catch(e){srcMsg(`<div class="err">✖ ${esc(e.message)}</div>${silent?`<div class="hint">Memakai soal tersimpan terakhir (${BANK.length} soal).</div>`:""}`)}
+  finally{btn.disabled=false;btn.textContent="Muat"}
+}
+$("#srcLoad").onclick=()=>{const v=$("#srcUrl").value.trim();if(!v){$("#srcUrl").focus();return}loadFromLink(v,false)};
+$("#srcUrl").addEventListener("keydown",e=>{if(e.key==="Enter")$("#srcLoad").click()});
+$("#srcRefresh").onclick=()=>{if(SRC.link)loadFromLink(SRC.link,false)};
+$("#srcFile").onchange=async e=>{
+  const f=e.target.files[0];e.target.value="";if(!f)return;
+  srcMsg("Membaca "+esc(f.name)+"…");
+  try{const r=await parseFile(f);if(r.items.length)applyBank(r.items,{type:"file",name:f.name});reportResult(r,f.name)}
+  catch(err){srcMsg(`<div class="err">✖ ${esc(err.message)}</div>`)}
+};
+$("#srcBuiltin").onclick=()=>{
+  if(!confirm(`Ganti ke ${BUILTIN.length} soal bawaan? Link/file yang tersimpan dilepas.`))return;
+  $("#srcUrl").value="";applyBank(BUILTIN.slice(),{type:"builtin"});srcMsg(`<div class="ok">✔ Memakai ${BUILTIN.length} soal bawaan.</div>`);
+};
+function download(name,text,type){
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+const csvCell=v=>`"${String(v).replace(/"/g,'""')}"`;
+$("#tplCsv").onclick=()=>{
+  const rows=[["topik","soal","a","b","c","d","e","kunci","pembahasan"]].concat(BANK.map(q=>[q.topik,q.q,...[0,1,2,3,4].map(i=>q.opsi[i]||""),LETTERS[q.kunci],q.bahas||""]));
+  download("bank-soal-twk.csv","﻿"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n"),"text/csv");
+};
+$("#tplTxt").onclick=()=>{
+  let out="",last=null,no=0;
+  BANK.forEach(q=>{if(q.topik!==last){out+=(out?"\n":"")+"# "+q.topik+"\n\n";last=q.topik}no++;
+    out+=`${no}. ${q.q}\n`+q.opsi.map((o,i)=>`${LETTERS[i]}. ${o}`).join("\n")+`\nKunci: ${LETTERS[q.kunci]}\n`+(q.bahas?`Pembahasan: ${q.bahas}\n`:"")+"\n"});
+  download("bank-soal-twk.txt","﻿"+out,"text/plain");
+};
+window.ArenaParse={parseCSV,rowsToItems,parseTXT,parseJSON,parseAuto,linkToFetchUrl};
+
+/* ---------- ONLINE MODE (host = this screen, players = phones; relay via public MQTT over WebSocket) ---------- */
+const BROKERS=["wss://broker.hivemq.com:8884/mqtt","wss://broker.emqx.io:8084/mqtt","wss://test.mosquitto.org:8081/mqtt"];
+const MQTT_URL="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js";
+const QR_URL="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+const OL={role:null,client:null,pin:"",base:"",players:new Map(),qs:[],qi:-1,phase:"",answers:new Map(),last:null,cancelTimer:null,
+  me:"",myName:"",myAv:0,stAv:0,joined:false,joinTimer:0,curQi:-1,answeredQi:-1,revealQi:-1,qStart:0,stRaf:0,score:0,ok:0,bad:0,endShown:false,lastPun:""};
+
+function connectBroker(idx,ms=8000){
+  return loadLib(MQTT_URL,"mqtt").then(lib=>new Promise((res,rej)=>{
+    let done=false;
+    const c=lib.connect(BROKERS[idx],{clientId:"atwk_"+Math.random().toString(16).slice(2,12),clean:true,connectTimeout:ms,reconnectPeriod:2000,keepalive:30});
+    const fail=e=>{if(done)return;done=true;clearTimeout(to);try{c.end(true)}catch(_){}rej(e||new Error("gagal"))};
+    const to=setTimeout(()=>fail(new Error("timeout")),ms);
+    c.once("connect",()=>{if(done)return;done=true;clearTimeout(to);res(c)});
+    c.once("error",fail);
+  }));
+}
+function olPub(obj,retain){
+  if(!OL.client)return;
+  OL.client.publish(OL.base+(OL.role==="host"?"/h":"/p"),JSON.stringify(obj),{qos:1,retain:!!retain});
+}
+function netWatch(c){
+  const nb=$("#netbar");
+  c.on("offline",()=>{if(OL.client!==c)return;nb.textContent="⚠ Koneksi terputus. Menyambung ulang…";nb.classList.add("show")});
+  c.on("reconnect",()=>{if(OL.client!==c)return;nb.textContent="⏳ Menyambung ulang…";nb.classList.add("show")});
+  c.on("connect",()=>nb.classList.remove("show"));
+}
+function olClose(notify){
+  const c=OL.client;
+  if(OL.cancelTimer){OL.cancelTimer();OL.cancelTimer=null}
+  cancelAnimationFrame(OL.stRaf);clearTimeout(OL.joinTimer);
+  OL.client=null;
+  if(c){
+    if(notify&&OL.role==="host"){try{c.publish(OL.base+"/h",JSON.stringify({t:"closed"}),{qos:1,retain:true})}catch(e){}}
+    setTimeout(()=>{try{c.end()}catch(e){}},notify?800:0);
+  }
+  OL.role=null;OL.phase="";$("#netbar").classList.remove("show");
+}
+function runTimer(wrap,ring,num,T,onEnd){
+  let raf=0,last=null,stop=false;const t0=performance.now();
+  wrap.className="timer";ring.style.strokeDashoffset=0;num.textContent=Math.ceil(T/1000);
+  const loop=now=>{
+    if(stop)return;
+    const left=Math.max(0,T-(now-t0)),sec=Math.ceil(left/1000);
+    ring.style.strokeDashoffset=RING_C*(1-left/T);
+    if(sec!==last){last=sec;num.textContent=sec;wrap.classList.toggle("warn",left/T<.5);wrap.classList.toggle("hurry",sec<=5);if(sec<=5&&sec>0)SFX.tick()}
+    if(left<=0){stop=true;onEnd();return}
+    raf=requestAnimationFrame(loop);
+  };
+  raf=requestAnimationFrame(loop);
+  return()=>{stop=true;cancelAnimationFrame(raf)};
+}
+function scoreFor(ms,T,streak){return {gain:Math.round(1000*(1-.5*Math.min(ms,T)/T)),bonus:Math.min(streak-1,5)*100}}
+
+/* --- host --- */
+async function hostCreate(){
+  const qs=shuffle(pool()).slice(0,Math.min(S.set.n,pool().length));
+  if(!qs.length)return;
+  show("olLobby");
+  $("#lobStatus").textContent="Menghubungkan ke server online…";$("#lobPin").textContent="······";
+  $("#qrbox").innerHTML="";$("#lobUrl").textContent="";$("#lobStart").disabled=true;$("#lobFile").style.display="none";
+  $("#lobPlayers").innerHTML='<span class="hint">Menunggu peserta…</span>';$("#lobCount").textContent="0";
+  olClose();
+  let c=null,idx=-1;
+  for(let i=0;i<BROKERS.length&&!c;i++){try{c=await connectBroker(i);idx=i}catch(e){}}
+  if(!c){$("#lobStatus").innerHTML='<span class="err">✖ Tidak bisa terhubung ke server online. Cek internet, lalu tutup ruang dan coba lagi.</span>';return}
+  if(!$("#olLobby").classList.contains("active")){c.end(true);return}
+  Object.assign(OL,{role:"host",client:c,pin:String(idx+1)+String(Math.floor(Math.random()*1e5)).padStart(5,"0"),players:new Map(),qs,qi:-1,phase:"lobby",answers:new Map()});
+  OL.base="arenatwk/v1/"+OL.pin;S.qs=qs;
+  c.subscribe(OL.base+"/p",{qos:1});
+  c.on("message",(t,b)=>{if(OL.client!==c)return;let m;try{m=JSON.parse(b.toString())}catch(e){return}hostMsg(m)});
+  netWatch(c);
+  const url=location.href.split(/[?#]/)[0]+"?pin="+OL.pin;
+  $("#lobPin").textContent=OL.pin;$("#hPin").textContent=OL.pin;$("#lobUrl").textContent=url;
+  $("#lobFile").style.display=location.protocol==="file:"?"":"none";
+  $("#lobStatus").textContent=`${qs.length} soal · ${S.set.t} detik per soal · menunggu peserta…`;
+  loadLib(QR_URL,"QRCode").then(Q=>{$("#qrbox").innerHTML="";new Q($("#qrbox"),{text:url,width:220,height:220,correctLevel:Q.CorrectLevel.M})}).catch(()=>{});
+  hostLobbyPub();
+}
+function hostLobbyPub(){
+  OL.phase="lobby";
+  OL.last={t:"lobby",n:OL.qs.length,players:[...OL.players.values()].map(p=>({id:p.id,name:p.name,av:p.av}))};
+  olPub(OL.last,true);
+  const ps=[...OL.players.values()];
+  $("#lobCount").textContent=ps.length;
+  $("#lobPlayers").innerHTML=ps.length?ps.map(p=>`<span class="pchip">${avHTML(p.av)}<b>${esc(p.name)}</b></span>`).join(""):'<span class="hint">Menunggu peserta…</span>';
+  $("#lobStart").disabled=!ps.length;
+  $("#lobStart").textContent=ps.length?`Mulai Kuis (${ps.length} peserta) ▶`:"Mulai Kuis ▶";
+}
+function newOnlinePlayer(id,name,av){return {id,name,av,points:0,benar:0,salah:0,kosong:0,streak:0,maxStreak:0,log:[],punish:null}}
+function hostMsg(m){
+  if(!m||typeof m.id!=="string")return;
+  if(m.t==="join"){
+    let p=OL.players.get(m.id);
+    if(!p){
+      if(OL.phase==="end")return;
+      let name=String(m.name||"").trim().slice(0,16)||"Peserta";
+      const taken=n=>[...OL.players.values()].some(x=>x.name.toLowerCase()===n.toLowerCase());
+      if(taken(name)){let k=2;while(taken(name+" "+k))k++;name=name+" "+k}
+      p=newOnlinePlayer(m.id,name,Math.abs(m.av|0)%AVATARS.length);OL.players.set(m.id,p);SFX.click();
+    }
+    olPub({t:"ack",id:m.id,name:p.name},false);
+    if(OL.phase==="lobby")hostLobbyPub();else updAns();
+  }else if(m.t==="ans"){
+    if(OL.phase!=="q"||m.qi!==OL.qi||!OL.players.has(m.id)||OL.answers.has(m.id))return;
+    const q=OL.qs[OL.qi],i=m.i|0;if(i<0||i>=q.opsi.length)return;
+    OL.answers.set(m.id,{i,ms:Math.max(0,Math.min(+m.ms||0,S.set.t*1000))});
+    SFX.click();updAns();
+    if(OL.answers.size>=OL.players.size)setTimeout(hostReveal,500);
+  }
+}
+function updAns(){$("#hAns").textContent=`📥 ${OL.answers.size}/${OL.players.size} menjawab`}
+function hostQuestion(){
+  const q=OL.qs[OL.qi];OL.phase="q";OL.answers=new Map();
+  OL.last={t:"q",qi:OL.qi,n:OL.qs.length,q:q.q,topik:q.topik,opsi:q.opsi,dur:S.set.t};olPub(OL.last,true);
+  show("olQ");
+  $("#hProg").style.width=(OL.qi/OL.qs.length*100)+"%";$("#hProgTxt").textContent=`Soal ${OL.qi+1} / ${OL.qs.length}`;
+  $("#hTopic").textContent=q.topik;$("#hText").textContent=q.q;
+  const c=$("#hCard");c.classList.remove("enter");void c.offsetWidth;c.classList.add("enter");
+  $("#hOpts").className="opts";
+  $("#hOpts").innerHTML=q.opsi.map((o,i)=>`<div class="opt" style="background:${OPT_COL[i]};animation-delay:${.15+i*.07}s"><span class="sh"><span>${OPT_SH[i]}</span></span><span>${esc(o)}</span><span class="cnt">0</span></div>`).join("");
+  $("#hFb").className="fb";$("#hSkip").style.display="";
+  updAns();SFX.go();
+  if(OL.cancelTimer)OL.cancelTimer();
+  OL.cancelTimer=runTimer($("#hTimer"),$("#hRing"),$("#hTnum"),S.set.t*1000,()=>{$("#hTnum").textContent="0";setTimeout(hostReveal,1000)});
+}
+function hostReveal(){
+  if(OL.phase!=="q")return;OL.phase="reveal";
+  if(OL.cancelTimer){OL.cancelTimer();OL.cancelTimer=null}
+  const q=OL.qs[OL.qi],T=S.set.t*1000,counts=q.opsi.map(()=>0);
+  OL.players.forEach(p=>{
+    const a=OL.answers.get(p.id),i=a?a.i:-1,ok=i===q.kunci;let g=0;
+    if(ok){p.streak++;p.maxStreak=Math.max(p.maxStreak,p.streak);p.benar++;const s=scoreFor(a.ms,T,p.streak);g=s.gain+s.bonus;p.points+=g}
+    else{p.streak=0;if(i<0)p.kosong++;else p.salah++}
+    if(i>=0)counts[i]++;
+    p.log.push({topik:q.topik,ok,jawab:i,ms:a?a.ms:T});p.lastGain=g;p.lastI=i;p.lastOk=ok;
+  });
+  const arr=[...OL.players.values()].sort((a,b)=>b.points-a.points||b.benar-a.benar);
+  const res={};arr.forEach((p,k)=>{p.rank=k+1;res[p.id]={ok:p.lastOk,i:p.lastI,g:p.lastGain,pts:p.points,rk:k+1,st:p.streak,b:p.benar,s:p.salah+p.kosong}});
+  OL.last={t:"reveal",qi:OL.qi,n:OL.qs.length,kunci:q.kunci,ans:q.opsi[q.kunci],bahas:S.set.bahas?(q.bahas||""):"",total:arr.length,res};
+  olPub(OL.last,true);
+  $("#hOpts").classList.add("reveal");
+  document.querySelectorAll("#hOpts .opt").forEach((d,j)=>{d.classList.add(j===q.kunci?"correct":"dim");d.querySelector(".cnt").textContent="👤 "+counts[j]});
+  const nOk=counts[q.kunci];
+  $("#hFbTitle").textContent=`Jawaban: ${OL_SH(q.kunci)}. ${q.opsi[q.kunci]}`;
+  $("#hFbStat").textContent=`${nOk}/${arr.length} benar`;
+  $("#hFbBahas").textContent=S.set.bahas&&q.bahas?q.bahas:"";$("#hFbBahas").style.display=S.set.bahas&&q.bahas?"":"none";
+  $("#hFb").className="fb show ok";$("#hSkip").style.display="none";
+  $("#hProg").style.width=((OL.qi+1)/OL.qs.length*100)+"%";
+  SFX.ok();
+  setTimeout(()=>$("#hBoardBtn").focus({preventScroll:true}),50);
+}
+function OL_SH(i){return OPT_SH[i]}
+function hostBoard(){
+  const arr=[...OL.players.values()].sort((a,b)=>b.points-a.points||b.benar-a.benar);
+  $("#boardInfo").textContent=`Setelah soal ${OL.qi+1} dari ${OL.qs.length} · ${arr.length} peserta`;
+  $("#board").innerHTML=arr.slice(0,5).map((p,i)=>`<div class="brow" style="animation-delay:${i*.1}s"><span class="rk">${i+1}</span>${avHTML(p.av)}<b>${esc(p.name)}</b>${p.streak>=2?`<span class="streak">🔥${p.streak}</span>`:""}<span class="pts">${p.points.toLocaleString("id-ID")}${p.lastGain?`<span class="gn">+${p.lastGain}</span>`:""}</span></div>`).join("")||'<div class="hint" style="text-align:center">Belum ada peserta.</div>';
+  $("#boardNext").textContent=OL.qi+1>=OL.qs.length?"🏆 Hasil Akhir":"Soal berikutnya ▶";
+  show("olBoard");
+}
+function hostEnd(){
+  if(OL.cancelTimer){OL.cancelTimer();OL.cancelTimer=null}
+  OL.phase="end";S.qs=OL.qs;
+  showRank();hostPubEnd();
+}
+function hostPubEnd(){
+  if(OL.role!=="host"||OL.phase!=="end")return;
+  const n=S.qs.length;
+  OL.last={t:"end",n,max:n*5,pg:pgScaled(n),total:S.ranked.length,r:S.ranked.map((p,i)=>({id:p.id,rk:i+1,pts:p.points,b:p.benar,s:p.salah+p.kosong,nil:nilai(p),ok:lulus(p),pun:p.punish||""}))};
+  olPub(OL.last,true);
+}
+function hostAgain(){
+  OL.qs=shuffle(pool()).slice(0,Math.min(S.set.n,pool().length));S.qs=OL.qs;OL.qi=-1;
+  OL.players.forEach(p=>Object.assign(p,newOnlinePlayer(p.id,p.name,p.av)));
+  $("#lobStatus").textContent=`${OL.qs.length} soal · ${S.set.t} detik per soal · ronde baru`;
+  show("olLobby");hostLobbyPub();
+}
+$("#olCreate").onclick=hostCreate;
+$("#lobStart").onclick=()=>{if(!OL.players.size)return;OL.qi=0;hostQuestion()};
+$("#lobCancel").onclick=()=>{olClose(true);show("home")};
+$("#hSkip").onclick=()=>{if(OL.phase==="q")hostReveal()};
+$("#hBoardBtn").onclick=hostBoard;
+$("#boardNext").onclick=()=>{OL.qi++;if(OL.qi<OL.qs.length)hostQuestion();else hostEnd()};
+$("#hEnd").onclick=()=>{
+  if(!confirm("Akhiri sesi sekarang dan tampilkan peringkat?"))return;
+  if(OL.phase==="q")hostReveal();
+  OL.qs=OL.qs.slice(0,OL.qi+1);
+  hostEnd();
+};
+
+/* --- player --- */
+function renderStAv(){
+  $("#stAvgrid").innerHTML=AVATARS.map((a,i)=>`<button class="av${i===OL.stAv?" sel":""}" data-i="${i}" style="background:${a[1]}">${a[0]}</button>`).join("");
+}
+function stOpenJoin(pin){
+  const me=store.get("me",null);
+  if(me){$("#stName").value=me.name||"";OL.stAv=AVATARS[me.av]?me.av:0}
+  if(pin)$("#stPin").value=String(pin).replace(/\D/g,"").slice(0,6);
+  $("#stErr").innerHTML="";renderStAv();show("stJoin");
+  setTimeout(()=>($("#stPin").value?$("#stName"):$("#stPin")).focus(),100);
+}
+function stErr(msg){$("#stErr").innerHTML=`<div class="err">✖ ${esc(msg)}</div>`;const b=$("#stJoinBtn");b.disabled=false;b.textContent="Gabung ▶"}
+async function stJoin(){
+  const pin=$("#stPin").value.replace(/\D/g,""),name=$("#stName").value.trim();
+  if(!/^\d{6}$/.test(pin)||!(+pin[0]>=1&&+pin[0]<=BROKERS.length))return stErr("PIN harus 6 angka sesuai layar guru.");
+  if(!name)return stErr("Isi nama dulu.");
+  store.set("me",{name,av:OL.stAv});
+  const b=$("#stJoinBtn");b.disabled=true;b.textContent="Menghubungkan…";$("#stErr").innerHTML="";
+  olClose();
+  let c=null;
+  for(let a=0;a<3&&!c;a++){
+    if(a)b.textContent=`Mencoba lagi (${a+1}/3)…`;
+    try{c=await connectBroker(+pin[0]-1,10000)}catch(e){}
+  }
+  if(!c)return stErr("Tidak bisa terhubung ke server. Cek internet lalu coba lagi.");
+  let id=null;try{id=sessionStorage.getItem("arenatwk_id_"+pin)}catch(e){}
+  if(!id){id=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);try{sessionStorage.setItem("arenatwk_id_"+pin,id)}catch(e){}}
+  Object.assign(OL,{role:"player",client:c,pin,base:"arenatwk/v1/"+pin,me:id,myName:name,myAv:OL.stAv,joined:false,last:null,curQi:-1,answeredQi:-1,revealQi:-1,score:0,ok:0,bad:0,endShown:false,lastPun:""});
+  c.on("message",(t,buf)=>{if(OL.client!==c)return;let m;try{m=JSON.parse(buf.toString())}catch(e){return}stMsg(m)});
+  netWatch(c);
+  c.on("connect",()=>{if(OL.client===c)stSendJoin()});
+  c.subscribe(OL.base+"/h",{qos:1},()=>stSendJoin());
+  OL.joinTimer=setTimeout(()=>{if(!OL.joined&&OL.client===c){olClose();stErr("Ruang dengan PIN ini tidak ditemukan atau belum dibuka guru. Cek PIN lalu coba lagi.")}},9000);
+}
+function stSendJoin(){if(OL.role==="player")olPub({t:"join",id:OL.me,name:OL.myName,av:OL.myAv},false)}
+function stMsg(m){
+  if(m.t==="ack"){
+    if(m.id!==OL.me)return;
+    const first=!OL.joined;OL.joined=true;OL.myName=m.name||OL.myName;clearTimeout(OL.joinTimer);
+    if(first){const b=$("#stJoinBtn");b.disabled=false;b.textContent="Gabung ▶";SFX.go();stRender(OL.last||{t:"lobby",players:[]})}
+    return;
+  }
+  if(m.t==="closed"){
+    if(!OL.joined){olClose();return stErr("Sesi dengan PIN ini sudah ditutup guru.")}
+    if(OL.last&&OL.last.t==="end"){olClose();return}
+    olClose();stShowMsg("Sesi ditutup 👋","Guru menutup ruang. Terima kasih sudah ikut!");return;
+  }
+  if(["lobby","q","reveal","end"].includes(m.t)){OL.last=m;if(OL.joined)stRender(m)}
+}
+function stShowMsg(t,x){$("#smTitle").textContent=t;$("#smText").textContent=x;show("stMsg")}
+function stHud(){
+  $("#sqAv").style.background=AVATARS[OL.myAv][1];$("#sqAv").textContent=AVATARS[OL.myAv][0];$("#sqName").textContent=OL.myName;
+  $("#sqScore").textContent=OL.score.toLocaleString("id-ID");$("#sqOk").textContent=OL.ok;$("#sqBad").textContent=OL.bad;
+}
+function stRender(m){
+  if(m.t==="lobby"){
+    cancelAnimationFrame(OL.stRaf);
+    Object.assign(OL,{curQi:-1,answeredQi:-1,revealQi:-1,score:0,ok:0,bad:0,endShown:false,lastPun:""});
+    $("#swAv").style.background=AVATARS[OL.myAv][1];$("#swAv").textContent=AVATARS[OL.myAv][0];$("#swName").textContent=OL.myName;
+    $("#swInfo").textContent=`PIN ${OL.pin} · ${m.players?m.players.length:0} peserta di ruang. Lihat layar guru, kuis segera dimulai…`;
+    show("stWait");return;
+  }
+  if(m.t==="q"){
+    if(m.qi===OL.curQi&&($("#stQ").classList.contains("active")||$("#stSent").classList.contains("active")))return;
+    OL.curQi=m.qi;
+    if(OL.answeredQi===m.qi){stSent(null);return}
+    stHud();
+    $("#sqProg").style.width=(m.qi/m.n*100)+"%";$("#sqProgTxt").textContent=`Soal ${m.qi+1} / ${m.n}`;
+    $("#sqTopic").textContent=m.topik;$("#sqText").textContent=m.q;
+    const c=$("#sqCard");c.classList.remove("enter");void c.offsetWidth;c.classList.add("enter");
+    $("#sqOpts").innerHTML=m.opsi.map((o,i)=>`<button class="opt" data-i="${i}" style="background:${OPT_COL[i]};animation-delay:${.1+i*.06}s"><span class="sh"><span>${OPT_SH[i]}</span></span><span>${esc(o)}</span></button>`).join("");
+    show("stQ");SFX.go();
+    OL.qStart=performance.now();const T=m.dur*1000,bar=$("#sqBar"),num=$("#sqNum");let last=null;
+    cancelAnimationFrame(OL.stRaf);
+    const loop=now=>{
+      if(OL.answeredQi===m.qi||OL.curQi!==m.qi)return;
+      const left=Math.max(0,T-(now-OL.qStart)),sec=Math.ceil(left/1000);
+      bar.style.width=(left/T*100)+"%";
+      if(sec!==last){last=sec;num.textContent=sec;bar.parentNode.classList.toggle("hurry",sec<=5);if(sec<=5&&sec>0)SFX.tick()}
+      if(left<=0){OL.answeredQi=m.qi;stSent(-1);return}
+      OL.stRaf=requestAnimationFrame(loop);
+    };
+    OL.stRaf=requestAnimationFrame(loop);
+    return;
+  }
+  if(m.t==="reveal"){
+    if(OL.revealQi===m.qi&&$("#stRes").classList.contains("active"))return;
+    OL.revealQi=m.qi;OL.curQi=m.qi;OL.answeredQi=m.qi;cancelAnimationFrame(OL.stRaf);
+    const r=m.res&&m.res[OL.me],box=$("#srBox");
+    if(!r){box.className="resbox na";box.innerHTML=`<div class="big">Lewat 🙂</div>Kamu masuk setelah soal ini dimulai.`}
+    else{
+      OL.score=r.pts;OL.ok=r.b;OL.bad=r.s;
+      box.className="resbox "+(r.ok?"ok":"no");
+      box.innerHTML=`<div class="big">${r.ok?"Benar! 🎉":(r.i<0?"Tidak menjawab ⏰":"Salah 😅")}</div>
+        <div style="font-size:22px;font-weight:700">${r.ok?"+"+r.g+" poin":"+0 poin"}${r.st>=2?` · 🔥 ${r.st}x beruntun`:""}</div>
+        <div style="margin-top:8px">Peringkat <b>${r.rk}</b> dari ${m.total} · total <b>${r.pts.toLocaleString("id-ID")}</b> poin</div>`;
+      r.ok?SFX.ok():SFX.bad();
+    }
+    $("#srAns").innerHTML=`Jawaban benar: <b>${OPT_SH[m.kunci]}. ${esc(m.ans)}</b>`;
+    $("#srBahas").textContent=m.bahas||"";$("#srBahas").style.display=m.bahas?"":"none";
+    show("stRes");return;
+  }
+  if(m.t==="end"){
+    cancelAnimationFrame(OL.stRaf);
+    const r=(m.r||[]).find(x=>x.id===OL.me),box=$("#seBox");
+    if(!r){box.innerHTML=`<div class="bigmsg">Sesi selesai 🏁</div><div class="hint">Kamu tidak tercatat di ronde ini.</div>`;show("stEnd");return}
+    const medal=r.rk<=3?["🥇","🥈","🥉"][r.rk-1]:"#"+r.rk;
+    box.innerHTML=`<div class="bigav" style="background:${AVATARS[OL.myAv][1]}">${AVATARS[OL.myAv][0]}</div>
+      <div class="turnname">${esc(OL.myName)}</div>
+      <div class="bigmsg">${medal} <span style="font-size:20px">dari ${m.total} peserta</span></div>
+      <div class="card" style="width:100%">
+        <div class="sumgrid"><div><b>${r.pts.toLocaleString("id-ID")}</b>Poin</div><div><b style="color:var(--ok)">${r.b}</b>Benar</div><div><b style="color:var(--bad)">${r.s}</b>Salah</div><div><b>${r.nil}</b>Nilai</div></div>
+        <div style="text-align:center"><span class="badge ${r.ok?"pass":"fail"}">${r.ok?"LULUS PG ✔":"BELUM LULUS"}</span></div>
+        <div class="hint" style="text-align:center;margin-top:8px">Nilai ${r.nil} dari ${m.max} · passing grade ${m.pg}</div>
+        ${r.pun?`<div class="punres show" style="margin-top:12px">⚖️ Hukumanmu:<br>${esc(r.pun)}</div>`:(!r.ok?`<div class="hint" style="text-align:center;margin-top:12px">Tunggu roda hukuman di layar guru… 🎡</div>`:"")}
+      </div>`;
+    show("stEnd");
+    if(!OL.endShown){OL.endShown=true;if(r.ok||r.rk<=3){SFX.fan();confetti(3000)}else SFX.sad()}
+    if(r.pun&&r.pun!==OL.lastPun){OL.lastPun=r.pun;SFX.bad()}
+  }
+}
+function stSent(i){
+  cancelAnimationFrame(OL.stRaf);
+  const m=OL.last&&OL.last.t==="q"?OL.last:null;
+  if(i===-1){$("#ssIcon").textContent="⏰";$("#ssTitle").textContent="Waktu habis";$("#ssPick").innerHTML=""}
+  else{
+    $("#ssIcon").textContent="📨";$("#ssTitle").textContent="Jawaban terkirim!";
+    $("#ssPick").innerHTML=i!=null&&m?`<div class="opt" style="background:${OPT_COL[i]};animation:none"><span class="sh"><span>${OPT_SH[i]}</span></span><span>${esc(m.opsi[i])}</span></div>`:"";
+  }
+  show("stSent");
+}
+function stAnswer(i){
+  if(OL.role!=="player"||OL.answeredQi===OL.curQi||!OL.last||OL.last.t!=="q")return;
+  const T=OL.last.dur*1000,ms=Math.min(performance.now()-OL.qStart,T);
+  OL.answeredQi=OL.curQi;
+  olPub({t:"ans",id:OL.me,qi:OL.curQi,i,ms:Math.round(ms)},false);
+  SFX.click();stSent(i);
+}
+$("#sqOpts").addEventListener("click",e=>{const b=e.target.closest(".opt");if(b)stAnswer(+b.dataset.i)});
+$("#stAvgrid").addEventListener("click",e=>{const b=e.target.closest(".av");if(!b)return;OL.stAv=+b.dataset.i;SFX.click();renderStAv()});
+$("#stJoinBtn").onclick=stJoin;
+["#stPin","#stName"].forEach(s=>$(s).addEventListener("keydown",e=>{if(e.key==="Enter")stJoin()}));
+$("#olJoinBtn").onclick=()=>stOpenJoin("");
+$("#stBack").onclick=()=>{olClose();show("home")};
+$("#smBack").onclick=()=>{show("home")};
+window.addEventListener("beforeunload",e=>{
+  const busy=(OL.role==="host"&&OL.phase&&OL.phase!=="end")||(OL.role==="player"&&OL.joined&&OL.last&&OL.last.t!=="end");
+  if(busy){e.preventDefault();e.returnValue=""}
+});
+
+/* ---------- init ---------- */
+const usedInit=new Set(S.players.map(p=>p.av));
+S.selAv=Math.max(0,AVATARS.findIndex((_,i)=>!usedInit.has(i)));
+renderPlayers();renderSettings();renderSource();
+const qpin=new URLSearchParams(location.search).get("pin");
+if(qpin)stOpenJoin(qpin);
+else if(SRC.type==="link"&&SRC.link)loadFromLink(SRC.link,true);
+})();
+</script>
+</body>
+</html>
