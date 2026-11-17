@@ -284,6 +284,9 @@ div.opt{cursor:default}
 .opt-ic{width:44px;height:44px;border-radius:10px;border:2px solid #e5e0f5;padding:2px;cursor:pointer;transition:transform .12s}
 .opt-ic:hover{transform:scale(1.08)}
 .opt-ic.sel{border-color:#7c3aed;box-shadow:0 0 0 2px #7c3aed}
+.opt-ic.big{width:58px;height:58px}
+.crnote{background:#fef3c7;color:#92400e;border-radius:10px;padding:6px 10px;font-size:13px;margin:4px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.crnote .tchip{font-size:12px;padding:3px 8px}
 /* 3D stages */
 .has3d{position:relative}
 .has3d>svg{visibility:hidden}
@@ -681,14 +684,52 @@ let BANK=BUILTIN,TOPICS=[];
 function calcTopics(){TOPICS=[...new Set(BANK.map(q=>q.topik))]}
 /* ---------- blocky character (original design, SVG) ---------- */
 const SKIN=["#ffdbb8","#f1c08f","#d9a066","#b07a4f","#7d5235","#5a3a24","#a5e3a0","#a9d6ff"];
-const SHIRT=["#ef4444","#f97316","#facc15","#22c55e","#14b8a6","#3b82f6","#6366f1","#a855f7","#ec4899","#f8fafc","#1f2937"];
-const PANTS=["#1e3a8a","#111827","#6b7280","#78350f","#065f46","#7f1d1d","#4c1d95","#e5e7eb"];
+const SHIRT=["#ef4444","#f97316","#facc15","#22c55e","#14b8a6","#3b82f6","#6366f1","#a855f7","#ec4899","#f8fafc","#1f2937",
+  "#fda4af","#a7f3d0","#fde68a","#7c2d12","#0f766e","#c4b5fd","#94a3b8","#be123c"];
+const PANTS=["#1e3a8a","#111827","#6b7280","#78350f","#065f46","#7f1d1d","#4c1d95","#e5e7eb",
+  "#a16207","#f9a8d4","#0e7490","#365314","#fef3c7","#3b82f6"];
 const HAIRC=["#1f1410","#5b3a1e","#a0522d","#e8c170","#d1d5db","#ef4444","#3b82f6","#ec4899","#f8fafc","#14b8a6"];
-const PATTERN=["Polos","Garis","Bintang","Kerah & dasi","Hoodie"];
+const PATTERN=["Polos","Garis","Bintang","Kerah & dasi","Hoodie","Batik","Kotak-kotak","Jersey","Jaket"];
+const PANT_STYLES=["Panjang","Pendek","Rok","Jeans"];
+/* original superhero costumes (not based on any DC/Marvel character) */
+const COSTUMES=[null,
+  {nm:"Petir Biru",suit:"#1d4ed8",pants:"#1e3a8a",acc:"#facc15",cape:"#e5e7eb",mask:false,em:"bolt",emc:"#facc15"},
+  {nm:"Bayangan Malam",suit:"#1f2937",pants:"#111827",acc:"#6d28d9",cape:"#4c1d95",mask:true,em:"moon",emc:"#c4b5fd"},
+  {nm:"Garuda Emas",suit:"#b91c1c",pants:"#7f1d1d",acc:"#f59e0b",cape:"#f59e0b",mask:false,em:"garuda",emc:"#fbbf24"},
+  {nm:"Bintang Nusantara",suit:"#1e40af",pants:"#f8fafc",acc:"#dc2626",cape:"#dc2626",mask:false,em:"star",emc:"#f8fafc"},
+  {nm:"Api Merapi",suit:"#ea580c",pants:"#1c1917",acc:"#1c1917",cape:null,mask:true,em:"flame",emc:"#fde047"},
+  {nm:"Penjaga Hutan",suit:"#15803d",pants:"#14532d",acc:"#78350f",cape:"#78350f",mask:true,em:"leaf",emc:"#bbf7d0"},
+  {nm:"Ombak Samudra",suit:"#0e7490",pants:"#164e63",acc:"#f8fafc",cape:"#1e3a8a",mask:false,em:"wave",emc:"#f8fafc"},
+  {nm:"Robot Baja",suit:"#9ca3af",pants:"#4b5563",acc:"#374151",cape:null,mask:false,em:"core",emc:"#67e8f9"},
+  {nm:"Ratu Es",suit:"#bae6fd",pants:"#e0f2fe",acc:"#f8fafc",cape:"#f8fafc",mask:false,em:"snow",emc:"#0369a1"},
+  {nm:"Kilat Senja",suit:"#be185d",pants:"#831843",acc:"#fbbf24",cape:"#fbbf24",mask:true,em:"bolt",emc:"#fde68a"}
+];
+const COSTUME_NAMES=COSTUMES.map(c=>c?c.nm:"Tanpa kostum");
 const FACES=["Senyum","Tertawa","Kacamata hitam","Kedip","Kaget","Serius","Malu-malu"];
 const HATS=["Botak","Rambut pendek","Rambut jabrik","Rambut panjang","Kerudung","Peci","Topi","Kupluk","Ikat kepala","Mahkota"];
-const AVK=["s","b","m","c","w","t","r"];
-const AVN=()=>[SKIN.length,SHIRT.length,PATTERN.length,PANTS.length,FACES.length,HATS.length,HAIRC.length];
+const AVK=["s","b","m","c","w","t","r","g","k"];
+const AVN=()=>[SKIN.length,SHIRT.length,PATTERN.length,PANTS.length,FACES.length,HATS.length,HAIRC.length,PANT_STYLES.length,COSTUMES.length];
+function lookOf(a){
+  const c=COSTUMES[a.k];
+  if(c)return {c,sh:c.suit,pa:c.pants,acc:c.acc,cape:c.cape,mask:c.mask,g:0};
+  return {c:null,sh:SHIRT[a.b],pa:PANTS[a.c],acc:null,cape:null,mask:false,g:a.g};
+}
+function emblemMarkup(c){
+  const S='stroke="rgba(0,0,0,.3)" stroke-width="1.1"',f=c.emc;
+  const ring=`<circle cx="50" cy="59" r="12" fill="${mix(c.suit,"#000000",.25)}" ${S}/>`;
+  return ring+({
+    bolt:`<path d="M53 47 L44 60 L50 60 L46 72 L57 56 L51 56 Z" fill="${f}" ${S}/>`,
+    moon:`<path d="M54 49 A10 10 0 1 0 54 69 A8 8 0 1 1 54 49 Z" fill="${f}" ${S}/>`,
+    garuda:`<path d="M50 54 L38 50 L42 56 L36 56 L44 61 L41 64 L50 61 L59 64 L56 61 L64 56 L58 56 L62 50 Z" fill="${f}" ${S}/><circle cx="50" cy="52" r="2.6" fill="${f}" ${S}/>`,
+    star:(()=>{let p=[];for(let i=0;i<10;i++){const r=i%2?4.5:10.5,an=-Math.PI/2+i*Math.PI/5;p.push((50+r*Math.cos(an)).toFixed(1)+","+(59.5+r*Math.sin(an)).toFixed(1))}return `<polygon points="${p.join(" ")}" fill="${f}" ${S}/>`})(),
+    flame:`<path d="M50 47 C57 54 60 58 56 66 C54 71 46 71 44 66 C41 60 46 56 47 51 C48 55 50 57 50 57 C51 53 49 50 50 47 Z" fill="${f}" ${S}/>`,
+    leaf:`<path d="M50 48 C61 52 61 66 50 71 C39 66 39 52 50 48 Z" fill="${f}" ${S}/><path d="M50 50 V69" stroke="${c.suit}" stroke-width="1.4"/>`,
+    wave:`<path d="M39 58 q5.5 -7 11 0 t11 0 M39 64 q5.5 -7 11 0 t11 0" stroke="${f}" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+    core:`<rect x="43" y="52" width="14" height="14" rx="3.5" fill="${f}" ${S}/><rect x="47" y="56" width="6" height="6" rx="1.5" fill="#fff"/>`,
+    snow:`<path d="M50 49 V69 M41.3 54 L58.7 64 M41.3 64 L58.7 54 M47 50.5 L50 53 L53 50.5 M47 67.5 L50 65 L53 67.5" stroke="${f}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`
+  }[c.em]||"");
+}
+function chestMarkup(a){const c=COSTUMES[a.k];return c?emblemMarkup(c):patternMarkup(a)}
 function avCode(o){return AVK.map(k=>(o[k]|0).toString(36)).join("")}
 function avPreset(n){return avCode({s:n%6,b:(n*3)%SHIRT.length,m:n%5,c:(n*5)%PANTS.length,w:n%FACES.length,t:(n%9)+1,r:n%5})}
 function avParse(code){
@@ -698,9 +739,14 @@ function avParse(code){
   return o;
 }
 function avNorm(c){return avCode(avParse(c))}
-function avRandom(){const n=AVN(),o={};AVK.forEach((k,i)=>o[k]=Math.floor(Math.random()*n[i]));o.s=Math.floor(Math.random()*6);return avCode(o)}
+function avRandom(){
+  const n=AVN(),o={};AVK.forEach((k,i)=>o[k]=Math.floor(Math.random()*n[i]));o.s=Math.floor(Math.random()*6);
+  o.k=Math.random()<0.3?1+Math.floor(Math.random()*(COSTUMES.length-1)):0;
+  if(o.g===2&&Math.random()<0.5)o.g=0;
+  return avCode(o);
+}
 function mix(hex,to,t){const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));const a=p(hex),b=p(to);return "#"+a.map((v,i)=>Math.round(v+(b[i]-v)*t).toString(16).padStart(2,"0")).join("")}
-function avBg(code){return mix(SHIRT[avParse(code).b],"#ffffff",.55)}
+function avBg(code){return mix(lookOf(avParse(code)).sh,"#ffffff",.55)}
 const rr=(x,y,w,h,r)=>`M${x+r} ${y}H${x+w-r}Q${x+w} ${y} ${x+w} ${y+r}V${y+h-r}Q${x+w} ${y+h} ${x+w-r} ${y+h}H${x+r}Q${x} ${y+h} ${x} ${y+h-r}V${y+r}Q${x} ${y} ${x+r} ${y}Z`;
 function patternMarkup(a){
   const S='stroke="rgba(0,0,0,.25)" stroke-width="1.2"',shD=mix(SHIRT[a.b],"#000000",.22);let g="";
@@ -708,12 +754,20 @@ function patternMarkup(a){
   if(a.m===2){let pts=[];for(let i=0;i<10;i++){const r=i%2?4.2:10,an=-Math.PI/2+i*Math.PI/5;pts.push((50+r*Math.cos(an)).toFixed(1)+","+(60+r*Math.sin(an)).toFixed(1))}g+=`<polygon points="${pts.join(" ")}" fill="${a.b===2?"#fff":"#fde047"}" ${S}/>`}
   if(a.m===3){const tie=a.b===0?"#1e3a8a":"#b91c1c";g+=`<path d="M50 49 L46 54 L49 73 L51 73 L54 54 Z" fill="${tie}" ${S}/><path d="M37 40 L50 50 L63 40 Z" fill="#fff" ${S}/>`}
   if(a.m===4)g+=`<rect x="37" y="62" width="26" height="13" rx="3" fill="${shD}"/><path d="M45 42 V53 M55 42 V53" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`;
+  if(a.m===5){const bc=[2,9,12,13].includes(a.b)?"#78350f":"#fef3c7";
+    for(let y=45;y<=80;y+=7)g+=`<path d="M25 ${y+6} Q31 ${y-2} 37 ${y+6} T49 ${y+6} T61 ${y+6} T73 ${y+6}" stroke="${bc}" stroke-width="2" fill="none" opacity=".7"/>`;
+    for(let y=48;y<=78;y+=7)for(let x=31;x<=69;x+=12)g+=`<circle cx="${x}" cy="${y}" r="1.2" fill="${bc}" opacity=".7"/>`}
+  if(a.m===6){[31,40,49,58,67].forEach(x=>{g+=`<rect x="${x}" y="40.6" width="4" height="39.8" fill="#000" opacity=".16"/>`});[45,54,63,72].forEach(y=>{g+=`<rect x="27.6" y="${y}" width="44.8" height="3.5" fill="#fff" opacity=".28"/>`})}
+  if(a.m===7){const tc=[2,9,12,13].includes(a.b)?"#1f2937":"#fff";g+=`<rect x="27.6" y="41" width="5" height="39" fill="${tc}" opacity=".5"/><rect x="67.4" y="41" width="5" height="39" fill="${tc}" opacity=".5"/><text x="50" y="71" font-size="20" font-weight="700" text-anchor="middle" fill="${tc}" font-family="Arial,Helvetica,sans-serif">${(a.b*7+3)%99||10}</text>`}
+  if(a.m===8)g+=`<path d="M37 40 L50 47 L63 40" fill="${shD}" ${S}/><path d="M50 47 V81" stroke="#e5e7eb" stroke-width="1.8"/><path d="M48 50 H52 M48 56 H52 M48 62 H52 M48 68 H52 M48 74 H52" stroke="#e5e7eb" stroke-width="1"/><rect x="31" y="64" width="12" height="9" rx="2" fill="${shD}" ${S}/><rect x="57" y="64" width="12" height="9" rx="2" fill="${shD}" ${S}/>`;
   return g;
 }
 function faceMarkup(a,blink){
   const E="#2b1d14",line=d=>`<path d="${d}" stroke="${E}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
   const eyes=(ry)=>`<ellipse cx="43" cy="20" rx="2.6" ry="${ry||3.2}" fill="${E}"/><ellipse cx="57" cy="20" rx="2.6" ry="${ry||3.2}" fill="${E}"/><circle cx="43.9" cy="18.6" r=".9" fill="#fff"/><circle cx="57.9" cy="18.6" r=".9" fill="#fff"/>`;
   const happy=line("M40 21 Q43 16.5 46 21 M54 21 Q57 16.5 60 21"),smile=line("M43 27.5 Q50 33 57 27.5");
+  const cos=COSTUMES[a.k],mask=cos&&cos.mask?`<path d="M34.5 14.5 Q50 10.5 65.5 14.5 L65.5 24.5 Q57 22 50 24.5 Q43 22 34.5 24.5 Z" fill="${mix(cos.suit,"#000000",.55)}"/><ellipse cx="43" cy="19.8" rx="4" ry="3.9" fill="#fff"/><ellipse cx="57" cy="19.8" rx="4" ry="3.9" fill="#fff"/>`:"";
+  if(mask)return mask+faceMarkup(Object.assign({},a,{k:0}),blink);
   if(blink){
     const c=line("M40.5 20.5 H45.5 M54.5 20.5 H59.5");
     if(a.w===0||a.w===3)return c+smile;
@@ -732,22 +786,38 @@ function faceMarkup(a,blink){
 }
 function avSVG(code,mode){
   mode=mode||"bust";
-  const a=avParse(code),sk=SKIN[a.s],sh=SHIRT[a.b],pa=PANTS[a.c],hc=HAIRC[a.r];
-  const S='stroke="rgba(0,0,0,.25)" stroke-width="1.2"',E="#2b1d14";
+  const a=avParse(code),L=lookOf(a),sk=SKIN[a.s],sh=L.sh,pa=L.pa,hc=HAIRC[a.r];
+  const S='stroke="rgba(0,0,0,.25)" stroke-width="1.2"';
   const shD=mix(sh,"#000000",.22),paD=mix(pa,"#000000",.35),hcD=mix(hc,"#000000",.3);
   const vb=mode==="full"?"4 -8 92 136":mode==="head"?"25 -7 50 50":"14 -7 72 72";
-  const line=d=>`<path d="${d}" stroke="${E}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
   let g="";
+  if(L.cape)g+=`<path d="M27 41 H73 L82 ${mode==="full"?114:72} Q50 ${mode==="full"?120:78} 18 ${mode==="full"?114:72} Z" fill="${L.cape}" ${S}/>`;
   if(mode==="full"){
-    g+=`<rect x="28" y="80" width="21" height="42" rx="3" fill="${pa}" ${S}/><rect x="51" y="80" width="21" height="42" rx="3" fill="${pa}" ${S}/>`;
-    g+=`<rect x="28" y="115" width="21" height="8" rx="3" fill="${paD}"/><rect x="51" y="115" width="21" height="8" rx="3" fill="${paD}"/>`;
+    const shoe=L.acc||paD,shoeY=L.acc?106:115,shoeH=L.acc?17:8;
+    if(L.g===2){
+      g+=`<rect x="30" y="80" width="17" height="40" rx="3" fill="${sk}" ${S}/><rect x="53" y="80" width="17" height="40" rx="3" fill="${sk}" ${S}/>`;
+      g+=`<path d="M27 79 H73 L79 104 Q50 108 21 104 Z" fill="${pa}" ${S}/>`;
+    }else if(L.g===1){
+      g+=`<rect x="28" y="80" width="21" height="40" rx="3" fill="${sk}" ${S}/><rect x="51" y="80" width="21" height="40" rx="3" fill="${sk}" ${S}/>`;
+      g+=`<rect x="28" y="80" width="21" height="21" rx="3" fill="${pa}" ${S}/><rect x="51" y="80" width="21" height="21" rx="3" fill="${pa}" ${S}/>`;
+    }else{
+      g+=`<rect x="28" y="80" width="21" height="42" rx="3" fill="${pa}" ${S}/><rect x="51" y="80" width="21" height="42" rx="3" fill="${pa}" ${S}/>`;
+      if(L.g===3)g+=`<path d="M31 82 V113 M46 82 V113 M54 82 V113 M69 82 V113" stroke="#fde68a" stroke-width="1" stroke-dasharray="2 2" opacity=".8"/><path d="M30 86 Q38 92 46 86 M54 86 Q62 92 70 86" stroke="#fde68a" stroke-width="1" fill="none" opacity=".8"/>`;
+    }
+    g+=`<rect x="28" y="${shoeY}" width="21" height="${shoeH}" rx="3" fill="${shoe}" ${S}/><rect x="51" y="${shoeY}" width="21" height="${shoeH}" rx="3" fill="${shoe}" ${S}/>`;
   }
-  const sl=a.m===4?30:20;
-  g+=`<rect x="12" y="40" width="14" height="38" rx="4" fill="${sk}" ${S}/><rect x="74" y="40" width="14" height="38" rx="4" fill="${sk}" ${S}/>`;
-  g+=`<rect x="12" y="40" width="14" height="${sl}" rx="4" fill="${sh}" ${S}/><rect x="74" y="40" width="14" height="${sl}" rx="4" fill="${sh}" ${S}/>`;
+  if(L.c){
+    g+=`<rect x="12" y="40" width="14" height="38" rx="4" fill="${sh}" ${S}/><rect x="74" y="40" width="14" height="38" rx="4" fill="${sh}" ${S}/>`;
+    g+=`<rect x="12" y="66" width="14" height="12" rx="4" fill="${L.acc}" ${S}/><rect x="74" y="66" width="14" height="12" rx="4" fill="${L.acc}" ${S}/>`;
+  }else{
+    const sl=a.m===4||a.m===8?30:20;
+    g+=`<rect x="12" y="40" width="14" height="38" rx="4" fill="${sk}" ${S}/><rect x="74" y="40" width="14" height="38" rx="4" fill="${sk}" ${S}/>`;
+    g+=`<rect x="12" y="40" width="14" height="${sl}" rx="4" fill="${sh}" ${S}/><rect x="74" y="40" width="14" height="${sl}" rx="4" fill="${sh}" ${S}/>`;
+  }
   g+=`<rect x="27" y="40" width="46" height="41" rx="4" fill="${sh}" ${S}/>`;
-  g+=patternMarkup(a);
-  if(a.m===4)g+=`<path d="${rr(30,27,40,16,8)}" fill="${shD}" ${S}/>`;
+  if(L.c)g+=`<rect x="27.6" y="75" width="44.8" height="5" fill="${L.acc}" opacity=".9"/>`;
+  g+=chestMarkup(a);
+  if(!L.c&&a.m===4)g+=`<path d="${rr(30,27,40,16,8)}" fill="${shD}" ${S}/>`;
   if(a.t===3)g+=`<path d="${rr(29,1,42,48,9)}" fill="${hc}" ${S}/>`;
   g+=`<path d="${rr(33,5,34,33,8)}" fill="${sk}" ${S}/>`;
   if(a.t===4)g+=`<path fill-rule="evenodd" fill="${hc}" ${S} d="${rr(26,0,48,54,16)} ${rr(37,10,26,26,10)}"/>`;
@@ -798,23 +868,35 @@ function rgeo(w,h,d,r){
   g.center();g.userData.cached=true;GEO[k]=g;return g;
 }
 function build3D(code){
-  const T3=A3.T,a=avParse(code);
-  const sk=SKIN[a.s],sh=SHIRT[a.b],pa=PANTS[a.c],hc=HAIRC[a.r];
+  const T3=A3.T,a=avParse(code),LK=lookOf(a);
+  const sk=SKIN[a.s],sh=LK.sh,pa=LK.pa,hc=HAIRC[a.r];
   const pm=(c,o)=>new T3.MeshPhongMaterial(Object.assign({color:c,shininess:70,specular:0x303030},o||{}));
   const rb=(w,h,d,m,x,y,z,r)=>{const o=new T3.Mesh(rgeo(w,h,d,r==null?0.3:r),m);o.position.set(x,y,z);return o};
   const decal=(inner,vb,w,h,pw,ph)=>{if(!inner)return null;const m=new T3.MeshPhongMaterial({map:svgTex(inner,vb,pw,ph,null),transparent:true,shininess:30,polygonOffset:true,polygonOffsetFactor:-2});return new T3.Mesh(new T3.PlaneGeometry(w,h),m)};
-  const mS=pm(sk),mSh=pm(sh),mPa=pm(pa),mPaD=pm(mix(pa,"#000000",.45)),mBelt=pm(mix(pa,"#000000",.22)),mH=pm(hc,{shininess:40}),mHD=pm(mix(hc,"#000000",.3)),mShD=pm(mix(sh,"#000000",.22));
+  const mS=pm(sk),mSh=pm(sh),mPa=pm(pa),mPaD=pm(mix(pa,"#000000",.45)),mBelt=pm(LK.acc||mix(pa,"#000000",.22)),mH=pm(hc,{shininess:40}),mHD=pm(mix(hc,"#000000",.3)),mShD=pm(mix(sh,"#000000",.22));
+  const mAcc=LK.acc?pm(LK.acc,{shininess:90}):null;
   const root=new T3.Group(),body=new T3.Group();root.add(body);
   const legL=new T3.Group(),legR=new T3.Group();legL.position.set(-1.12,4.25,0);legR.position.set(1.12,4.25,0);
-  [legL,legR].forEach(L=>{L.add(rb(2.0,3.5,1.95,mPa,0,-1.75,0,.35));L.add(rb(2.1,0.85,2.35,mPaD,0,-3.82,0.14,.36));body.add(L)});
+  [legL,legR].forEach(L=>{
+    if(LK.g===1){L.add(rb(2.0,1.9,1.95,mPa,0,-0.95,0,.35));L.add(rb(1.8,1.7,1.75,mS,0,-2.75,0,.35))}
+    else if(LK.g===2)L.add(rb(1.75,3.5,1.75,mS,0,-1.75,0,.35));
+    else L.add(rb(2.0,3.5,1.95,mPa,0,-1.75,0,.35));
+    if(mAcc)L.add(rb(2.12,1.7,2.3,mAcc,0,-3.4,0.1,.36));
+    else L.add(rb(2.1,0.85,2.35,mPaD,0,-3.82,0.14,.36));
+    body.add(L)});
+  if(LK.g===2){const sk2=new T3.Mesh(new T3.CylinderGeometry(2.45,3.15,2.2,24),pm(pa));sk2.position.y=3.35;body.add(sk2)}
   body.add(rb(4.5,0.7,2.15,mBelt,0,4.35,0,.25));
   body.add(rb(4.6,4.0,2.2,mSh,0,6.3,0,.5));
-  const dec=decal(patternMarkup(a),"27 40 46 41",4.4,3.92,256,228);if(dec){dec.position.set(0,6.28,1.106);body.add(dec)}
-  if(a.m===4)body.add(rb(3.6,1.3,0.9,mShD,0,8.45,-1.3,.4));
-  const sl=a.m===4?3.0:2.1;
+  const dec=decal(chestMarkup(a),"27 40 46 41",4.4,3.92,256,228);if(dec){dec.position.set(0,6.28,1.106);body.add(dec)}
+  if(!LK.c&&a.m===4)body.add(rb(3.6,1.3,0.9,mShD,0,8.45,-1.3,.4));
+  let cape=null;
+  if(LK.cape){cape=new T3.Group();cape.position.set(0,8.15,-1.2);const cm=rb(4.9,6.4,0.18,pm(LK.cape,{shininess:30,side:T3.DoubleSide}),0,-3.2,0,.08);cape.add(cm);body.add(cape)}
+  const sl=LK.c?3.75:(a.m===4||a.m===8?3.0:2.1);
   const arm=x=>{const g=new T3.Group();g.position.set(x,8.0,0);
-    g.add(rb(1.48,sl+0.3,1.48,mSh,0,-sl/2+0.12,0,.45));
-    g.add(rb(1.3,3.75-sl,1.3,mS,0,-sl-(3.75-sl)/2+0.05,0,.5));body.add(g);return g};
+    if(LK.c){g.add(rb(1.48,2.6,1.48,mSh,0,-1.2,0,.45));g.add(rb(1.42,1.45,1.42,mAcc,0,-3.1,0,.5))}
+    else{g.add(rb(1.48,sl+0.3,1.48,mSh,0,-sl/2+0.12,0,.45));
+      g.add(rb(1.3,3.75-sl,1.3,mS,0,-sl-(3.75-sl)/2+0.05,0,.5))}
+    body.add(g);return g};
   const armL=arm(-3.1),armR=arm(3.1);
   const neck=new T3.Mesh(new T3.CylinderGeometry(0.72,0.8,0.5,18),mS);neck.position.y=8.45;body.add(neck);
   const headG=new T3.Group();headG.position.set(0,8.55,0);body.add(headG);
@@ -842,7 +924,7 @@ function build3D(code){
       const gem=new T3.Mesh(new T3.SphereGeometry(0.22,10,8),pm("#ef4444",{shininess:120}));gem.position.set(0,yT+0.35,1.5);headG.add(gem);break}
   }
   root.traverse(o=>{if(o.isMesh)o.castShadow=true});
-  root.userData={body,legL,legR,armL,armR,headG,face,fOpen,fBlink};
+  root.userData={body,legL,legR,armL,armR,headG,face,fOpen,fBlink,cape};
   return root;
 }
 function init3D(){
@@ -936,6 +1018,7 @@ function anim3D(st,T){
   u.body.rotation.set(C.bx,0,C.bz);
   u.armL.rotation.set(C.aLx,0,C.aLz);u.armR.rotation.set(C.aRx,0,C.aRz);
   u.headG.rotation.set(C.hx,C.hy,C.hz);u.legL.rotation.x=C.lLx;u.legR.rotation.x=C.lRx;
+  if(u.cape)u.cape.rotation.x=(0.14+0.07*Math.sin(T*2.3)+Math.min(0.55,Math.abs(C.y)*0.18)+Math.abs(C.lLx)*0.3);
   if(u.fBlink){
     const sad=(st.anim||"").startsWith("sad");
     if(T>st.nextBlink&&!sad){st.blinkEnd=T+0.13;st.nextBlink=T+2.2+Math.random()*3.2}
@@ -979,14 +1062,17 @@ new MutationObserver(()=>{if(!scanQ)scanQ=requestAnimationFrame(()=>{scanQ=0;sca
   .observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:["data-av3d","data-anim"]});
 function mountCreator(el,get,set){
   let tab=0;
-  const TABS=[["🧑","Kepala"],["😀","Wajah"],["👕","Baju"],["👖","Celana"]];
+  const TABS=[["🧑","Kepala"],["😀","Wajah"],["👕","Baju"],["👖","Celana"],["🦸","Kostum"]];
   const sw=(k,arr)=>{const cur=avParse(get())[k];return `<div class="swrow">${arr.map((c,i)=>`<button type="button" class="swatch${cur===i?" sel":""}" data-k="${k}" data-v="${i}" style="background:${c}" aria-label="Warna ${i+1}"></button>`).join("")}</div>`};
-  const ic=(k,names)=>{const base=avParse(get());return `<div class="swrow">${names.map((nm,i)=>{const o=Object.assign({},base,{[k]:i});return `<button type="button" class="opt-ic${base[k]===i?" sel":""}" data-k="${k}" data-v="${i}" title="${nm}" style="background:${mix(SHIRT[base.b],"#ffffff",.75)}">${avSVG(avCode(o),"head")}</button>`}).join("")}</div>`};
+  const ic=(k,names,mode,extra)=>{const base=avParse(get());return `<div class="swrow">${names.map((nm,i)=>{const o=Object.assign({},base,{[k]:i},extra||{});return `<button type="button" class="opt-ic${mode==="bust"?" big":""}${base[k]===i?" sel":""}" data-k="${k}" data-v="${i}" title="${nm}" style="background:${mix(lookOf(o).sh,"#ffffff",.72)}">${avSVG(avCode(o),mode||"head")}</button>`}).join("")}</div>`};
+  const chips=(k,arr)=>{const cur=avParse(get())[k];return `<div class="swrow">${arr.map((p,i)=>`<button type="button" class="tchip${cur===i?" on":""}" data-k="${k}" data-v="${i}">${p}</button>`).join("")}</div>`};
+  const costumeNote=a=>a.k?`<div class="crnote">🦸 Kostum <b>${COSTUMES[a.k].nm}</b> sedang dipakai dan menggantikan baju &amp; celana. <button type="button" class="tchip" data-k="k" data-v="0">Lepas kostum</button></div>`:"";
   const rows=()=>{const a=avParse(get());return [
     `<div class="crrow"><span>Warna kulit</span>${sw("s",SKIN)}</div><div class="crrow"><span>Rambut / penutup kepala: <b>${HATS[a.t]}</b></span>${ic("t",HATS)}</div><div class="crrow"><span>Warna rambut / kerudung / topi</span>${sw("r",HAIRC)}</div>`,
     `<div class="crrow"><span>Ekspresi: <b>${FACES[a.w]}</b></span>${ic("w",FACES)}</div>`,
-    `<div class="crrow"><span>Warna baju</span>${sw("b",SHIRT)}</div><div class="crrow"><span>Motif</span><div class="swrow">${PATTERN.map((p,i)=>`<button type="button" class="tchip${a.m===i?" on":""}" data-k="m" data-v="${i}">${p}</button>`).join("")}</div></div>`,
-    `<div class="crrow"><span>Warna celana</span>${sw("c",PANTS)}</div>`
+    costumeNote(a)+`<div class="crrow"><span>Warna baju</span>${sw("b",SHIRT)}</div><div class="crrow"><span>Motif: <b>${PATTERN[a.m]}</b></span>${chips("m",PATTERN)}</div>`,
+    costumeNote(a)+`<div class="crrow"><span>Model: <b>${PANT_STYLES[a.g]}</b></span>${chips("g",PANT_STYLES)}</div><div class="crrow"><span>Warna celana / rok</span>${sw("c",PANTS)}</div>`,
+    `<div class="crrow"><span>Kostum pahlawan: <b>${COSTUME_NAMES[a.k]}</b></span>${ic("k",COSTUME_NAMES,"bust")}</div><div class="hint" style="font-size:12px">Kostum orisinal Arena TWK, lengkap dengan jubah, topeng, dan lambang di dada.</div>`
   ][tab]};
   const render=pop=>{
     const c=get();
